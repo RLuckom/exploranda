@@ -678,6 +678,22 @@ const barData = {
 };
 ```
 
+#### stackedBar
+
+Each `stackedBar` element specifies a bar chard with stacked bars of different colors. The bar data
+must be provided as an object that can be passed to the blessed-contrib stacked-bar element, with the
+exception that the `barBgColor` array should co on the same object as the `data` array. Remember to sort
+the data before returning it.
+
+```javascript
+const stackedBarData = {
+  barBgColor: ['red', 'yellow', 'green'], // colors for stack sections, bottom to top
+  barCategory: ['host1', 'host2'], // x-axis labels
+  stackedCategory: ['bad', 'less bad', 'probably fine'], // labels for the stack segments
+  data: [[0, 2, 3], [4, 0, 0]], // barCategory-major
+};
+```
+
 ## Creating new AccessSchema objects
 
 AccessSchema objects live one step closer to the center of this library than the 
