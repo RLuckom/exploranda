@@ -14,12 +14,12 @@ const display = {
       rowSpan: 6,
       columnSpan: 12
     },
-      [`${instanceId} Network Packets Out`]: {
-        column: 0,
-        row: 6,
-        rowSpan: 6,
-        columnSpan: 12
-      },
+    [`${instanceId} Network Packets Out`]: {
+      column: 0,
+      row: 6,
+      rowSpan: 6,
+      columnSpan: 12
+    },
   }
 };
 
@@ -28,10 +28,10 @@ const transformation = {
     source: 'instanceNetworkIn',
     type: 'AVERAGE_MAX_LINE'
   },
-    [`${instanceId} Network Packets Out`]: {
-      source: 'instanceNetworkOut',
-      type: 'AVERAGE_MAX_LINE'
-    }
+  [`${instanceId} Network Packets Out`]: {
+    source: 'instanceNetworkOut',
+    type: 'AVERAGE_MAX_LINE'
+  }
 };
 const instanceNetworkIn = ec2MetricsBuilder(awsConfig,
   {value: 'NetworkPacketsIn'},
@@ -40,10 +40,10 @@ const instanceNetworkIn = ec2MetricsBuilder(awsConfig,
 );
 
 const instanceNetworkOut = ec2MetricsBuilder(awsConfig,
-    {value: 'NetworkPacketsOut'},
-    {value: ['Average', 'Maximum']},
-    {value: [{Name: 'InstanceId', Value: instanceId}]}
-  );
+  {value: 'NetworkPacketsOut'},
+  {value: ['Average', 'Maximum']},
+  {value: [{Name: 'InstanceId', Value: instanceId}]}
+);
 
 instanceNetworkOut.formatter = ([inst]) => inst;
 instanceNetworkIn.formatter = ([inst]) => inst;

@@ -24,7 +24,7 @@ function metricTable(source, selector) {
       source: [source, metricName],
       tableBuilder: (params) => {
         const ids = _.map(params[source], selector);
-        return _.map(_.zip(ids, params[metricName]), ([ip, metricArray]) => {
+        return _.filter(_.map(_.zip(ids, params[metricName]), ([ip, metricArray]) => {
           metricArray = _.sortBy(metricArray, 'Timestamp');
           return {
             title: ip,
@@ -32,7 +32,7 @@ function metricTable(source, selector) {
             x: _.map(metricArray, (point) => point.Timestamp.getMinutes().toString()),
             y: _.map(metricArray, statisticName)
           };
-        });
+        }), (line) => line.x.length);
       }
     };
   }
