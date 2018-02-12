@@ -1,4 +1,6 @@
 npm-debug.log
+local
 node_modules
+.DS_STORE
 *.swp
 dist

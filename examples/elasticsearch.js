@@ -36,7 +36,7 @@ function nodeStatsDonutTable(calculator) {
     tableBuilder: (nodeStats) => {
       const perNode = _.reduce(nodeStats.nodes, (collector, stats, hash) => {
         collector.push({
-          label: stats.host, 
+          label: stats.host || 'unknown', 
           percent: calculator(stats)
         });
         return collector;
@@ -53,7 +53,7 @@ function nodeStatsBarChartTable(calculator) {
     tableBuilder: (nodeStats) => {
       const perNode = _.reduce(nodeStats.nodes, (collector, stats, hash) => {
         collector.push({
-          title: stats.host, 
+          title: stats.host || 'unknown', 
           docs: calculator(stats)
         });
         return collector;
@@ -171,30 +171,30 @@ const display = {
       column: 6,
       row: 2,
       rowSpan: 2,
-      columnSpan: 3
+      columnSpan: 6
     },
     'Elasticsearch Node Document Distribution': {
       barWidth: 13,
       column: 6,
       row: 0,
       rowSpan: 2,
-      columnSpan: 3
+      columnSpan: 6
     },
     'Elasticsearch Index Status Distribution': {
       barWidth: 9,
-      column: 9,
-      row: 0,
+      column: 6,
+      row: 6,
       rowSpan: 2,
-      columnSpan: 2
+      columnSpan: 6
     },
   },
   stackedBars: {
     'Elasticsearch Shards By Index Health': {
       barWidth: 13,
-      column: 6,
-      row: 4,
-      rowSpan: 2,
-      columnSpan: 3
+      column: 0,
+      row: 8,
+      rowSpan: 4,
+      columnSpan: 12
     }
   }
 };

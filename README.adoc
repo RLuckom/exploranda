@@ -798,6 +798,14 @@ based on the params provided (including, for now, if the params need to be chunk
 smaller groupings), the results of those calls will be merged with the `mergeIndividual`
 function.
 
+`onError` (optional) : In extremely rare cases, the AWS APIs require you to make a call before
+you know whether it can succeed. The only example of this so far is the `getBucketPolicy` S3
+method, which can return a `NoSuchBucketPolicy` error when a bucket policy does not exist, even
+though there is no other way to check for the policy's existence beforehand. In this kind of situation
+you can provide an `onError` field in the accessSchema, which will be passed the error and
+result of the AWS call. This parameter must return an object with `err` and `res` fields, which
+will be treated as if they were the error and response that had been returned by the API.
+
 `mergeIndividual` (optional) : Function to merge the results of multiple calls to an API
 _not_ triggered by the `incompleteIndicator`. For instance, if you pass an array of IDs
 as a parameter to a dependency whose accessSchema only takes a single ID, `mergeIndividual`
