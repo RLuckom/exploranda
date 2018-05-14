@@ -75,7 +75,7 @@ function shardHealthStackedBar({indexStats, shardStats}) {
   const ips = _(shardStats).map('ip').uniq().sort().value();
   const ipPositions = {};
   const redYellowGreenTotals = _.reduce(ips, (collector, ip, indx) => {
-    ipPositions[ip] = indx;
+    ipPositions[ip || 'unknown'] = indx;
     collector.push([0, 0, 0]);
     return collector;
   }, []);
@@ -85,7 +85,7 @@ function shardHealthStackedBar({indexStats, shardStats}) {
   });
   return {
     barBgColor: ['red', 'yellow', 'green'],
-    barCategory: ips,
+    barCategory: _.map(ips, (ip) => ip || 'unknown'),
     stackedCategory: ['red', 'yellow', 'green'],
     data: redYellowGreenTotals
   };
