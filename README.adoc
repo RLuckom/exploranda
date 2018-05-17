@@ -814,6 +814,10 @@ you pass no params to a dependency whose accessSchema lists a resource, and the 
 AWS is incomplete and requires subsequent requests to get all of the results, the results
 of the list calls will be merged with `mergeOperator`. 
 
+The `mergeIndividual` function will be passed an array of response arrays from successive requests
+to the resource. The default `mergeIndividual` behavior is [`_.flatten`](https://lodash.com/docs/4.17.5#flatten).
+To preserve the array of arrays, use `_.identity` or `(x) => x`.
+
 #### The `namespaceDetails` field
 
 The `namespaceDetails` member contains information about the namespace on the AWS
