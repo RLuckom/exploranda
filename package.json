@@ -30,7 +30,7 @@
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.8.5",
     "lodash": "^4.17.4",
-    "request": "^2.83.0"
+    "request": "^2.86.0"
   },
   "devDependencies": {
     "jasmine": "^2.8.0",
