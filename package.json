@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/localytics/exploranda.git"
+    "url": "git+https://github.com/rluckom/exploranda.git"
   },
   "keywords": [
     "monitoring",
@@ -21,9 +21,9 @@
   "author": "Raphael Luckom",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/localytics/exploranda/issues"
+    "url": "https://github.com/rluckom/exploranda/issues"
   },
-  "homepage": "https://github.com/localytics/exploranda",
+  "homepage": "https://github.com/rluckom/exploranda",
   "dependencies": {
     "async": "^2.6.0",
     "aws-sdk": "^2.181.0",
