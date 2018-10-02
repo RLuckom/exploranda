@@ -2,6 +2,13 @@ const exploranda = require('../lib/reporter');
 const {instancesBuilder} = exploranda.dataSources.google.compute;
 const {timeSeriesBuilder} = exploranda.dataSources.google.stackdriverMonitoring;
 
+/* USAGE: node ./instancesJsonGcp.js <path-to-service-account-credential-json> <name-of-instance>
+ *
+ * This example lists instances and gets disk write ops for a named instance passed as an argument.
+ * It requires a JSON file of service account credentials as described in 
+ * https://cloud.google.com/docs/authentication/production
+ */
+
 const keyFilename = process.argv[2];
 const instanceName = process.argv[3];
 
@@ -16,8 +23,8 @@ const sdAgg = {
 };
 
 const interv = {
-  startTime: {value: '2018-10-01T02:11:00Z'},
-  endTime: {value: '2018-10-01T03:22:00Z'}
+  startTime: {generate: () => new Date(Date.now() - 1000 * 60 * 60)},
+  endTime: {generate: () => new Date()}
 };
 
 function getReport() {
