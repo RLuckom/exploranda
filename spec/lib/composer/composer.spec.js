@@ -9,7 +9,7 @@ function initialization(namespace, region) {
   };
 }
 
-function awsConfig() {
+function apiConfig() {
   return {value: _.merge({}, keys, {region: 'us-east-1'})};
 }
 
@@ -31,7 +31,7 @@ function kinesisNamesDependency() {
   return {
     accessSchema: kinesisStreams,
     params: {
-      awsConfig: awsConfig(),
+      apiConfig: apiConfig(),
     }
   };
 }
@@ -127,7 +127,7 @@ const requestAndOneStreamTestCase = {
           source: 'request',
           formatter: (x) => x.StreamNames[0]
         },
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
       }
     },
   },
@@ -148,14 +148,14 @@ const doubleSourceUseTestCase = {
       accessSchema: kinesisStream,
       params: {
         StreamName: {source: 'kinesisNames'},
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
       }
     },
     kinesisStreams2: {
       accessSchema: kinesisStream,
       params: {
         StreamName: {source: 'kinesisNames'},
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
       }
     },
     kinesisNames: kinesisNamesDependency(),
@@ -189,7 +189,7 @@ const basicAwsWithFormatter = {
     kinesisNames: {
       accessSchema: kinesisStreams,
       params: {
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
       },
       formatter: (ar) => ar[0]
     }
@@ -210,7 +210,7 @@ const basicAwsWithGenerator = {
     kinesisNames: {
       accessSchema: kinesisStreams,
       params: {
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
       },
     }
   },
@@ -230,7 +230,7 @@ const doubleSourceTestCase = {
     jpl: {
       accessSchema: kinesisStream,
       params: {
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
         StreamName: {
           value: 'jpl'
         }
@@ -239,7 +239,7 @@ const doubleSourceTestCase = {
     mpls: {
       accessSchema: kinesisStream,
       params: {
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
         StreamName: {
           value: 'mpls'
         }
@@ -248,7 +248,7 @@ const doubleSourceTestCase = {
     multiSource: {
       accessSchema: kinesisStream,
       params: {
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
         StreamName: {
           source: ['mpls', 'jpl'],
           formatter: (mpls, jpl) => `${mpls[0].StreamName}-${jpl[0].StreamName}`
@@ -281,7 +281,7 @@ const dependentAwsTestCase = {
     kinesisName: {
       accessSchema: kinesisStream,
       params: {
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
       }
     }
   },
@@ -308,7 +308,7 @@ const awsWithParamFormatter = {
     kinesisStreams: {
       accessSchema: kinesisStream,
       params: {
-        awsConfig: awsConfig(),
+        apiConfig: apiConfig(),
         StreamName: {
           source: 'kinesisNames',
           formatter: (names) => _.filter(names, (n) => n[0] === 'b')

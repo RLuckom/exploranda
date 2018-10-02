@@ -70,7 +70,7 @@ const _ = require('lodash');
 const exploranda = require('./lib/reporter');
 const {ec2MetricsBuilder} = exploranda.dataSources.AWS.ec2;
 const instanceId = 'i-00e2c685b5bf8667f';
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const reporter = new exploranda.Reporter();
 reporter.setSchemas({
@@ -80,7 +80,7 @@ reporter.setSchemas({
     // dependency objects. See the "Dependencies" section for a more complete description.
     instanceNetworkIn: ec2MetricsBuilder(
       // AWS account and region data
-      awsConfig,
+      apiConfig,
       // The value to pass as the MetricName parameter is "NetworkPacketsIn"
       {value: 'NetworkPacketsIn'},
       // The value to pass as the Statistics parameter is the array.
@@ -89,7 +89,7 @@ reporter.setSchemas({
       {value: [{Name: 'InstanceId', Value: instanceId}]}
     ),
     instanceNetworkOut: ec2MetricsBuilder(
-      awsConfig,
+      apiConfig,
       {value: 'NetworkPacketsOut'},
       {value: ['Average', 'Maximum']},
       {value: [{Name: 'InstanceId', Value: instanceId}]}
@@ -199,17 +199,17 @@ parameters to use to get it. A very simple dependency object looks like this:
 ```javascript
 const {kinesisStreams, kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
 
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   kinesisNames: {
     accessSchema: kinesisStreams,
-    params: {awsConfig: {value: awsConfig}},
+    params: {apiConfig: {value: apiConfig}},
   },
   kinesisStreams: {
     accessSchema: kinesisStream,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       StreamName: {
         source: 'kinesisNames'
       }
@@ -233,8 +233,8 @@ of Kinesis Stream objects returned from the AWS API. Each dependency defines som
           documentation. For instance, the accessSchema `kinesisStream` in the example above specifies
           the way to use the aws `describeStreams` method, so the `params` for that dependency can include
           any parameter accepted by that method. The `StreamName` is a required parameter, so it
-          must be specified. Note that the `awsConfig` parameter is _always_ required. It is an object that
-          will be merged with the default arguments for the aws api constructor (e.g.`new AWS.ec2(awsConfig)`)
+          must be specified. Note that the `apiConfig` parameter is _always_ required. It is an object that
+          will be merged with the default arguments for the aws api constructor (e.g.`new AWS.ec2(apiConfig)`)
           so it is the place to pass `region`, `accessKeyId`, `secretAccessKey`, and `sessionToken` arguments
           to override the defaults. This allows you to specify region and aws account to use on a 
           per-dependency basis.
@@ -256,13 +256,13 @@ To specify a static value, set the `value` attribute to the value you want to us
 
 ```javascript
 const {kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   myKinesisStream: {
     accessSchema: kinesisStream,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       StreamName: {
         value: 'my-stream-name'
       }
@@ -277,13 +277,13 @@ needs to be given a time range:
 
 ```javascript
 const {kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   myKinesisStream: {
     accessSchema: kinesisStream,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       StreamName: {
         generate: () => `my-stream-name-${Date.now()}`
       }
@@ -300,17 +300,17 @@ those that include the substring `foo`:
 
 ```javascript
 const {kinesisStreams, kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   kinesisNames: {
     accessSchema: kinesisStreams,
-    params: {awsConfig: {value: awsConfig}},
+    params: {apiConfig: {value: apiConfig}},
   },
   kinesisStreams: {
     accessSchema: kinesisStream,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       StreamName: {
         source: 'kinesisNames',
         formatter: (streamNames) => streamNames.filter((s) => s.indexOf('foo') !== -1)
@@ -338,13 +338,13 @@ Your `dataDependencies` object could have as few as two entries:
 
 ```javascript
 const {serviceArnsByCluster, servicesByClusterAndArnArray} = require('exploranda').dataSources.AWS.ecs;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   serviceArns: {
     accessSchema: serviceArnsByCluster,
     params : {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       cluster: {
         value: 'my-cluster-name'
       }
@@ -353,7 +353,7 @@ const dataDependencies = {
   services: {
     accessSchema: servicesByClusterAndArnArray,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       cluster : {
         value: 'my-cluster-name'
       },
@@ -404,11 +404,11 @@ that usually change. The `dataDependency` above can also be implemented as:
 
 ```javascript
 const {clusterServiceArnsBuilder, servicesInClusterBuilder} = require('exploranda').dataSources.AWS.ecs;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
-  serviceArns: clusterServiceArnsBuilder(awsConfig, {value: 'my-cluster-name'}),
-  services: servicesInClusterBuilder(awsConfig,
+  serviceArns: clusterServiceArnsBuilder(apiConfig, {value: 'my-cluster-name'}),
+  services: servicesInClusterBuilder(apiConfig,
     {value: 'my-cluster-name'},
     {source: 'serviceArns'}
   )
