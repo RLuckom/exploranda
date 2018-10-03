@@ -4,7 +4,7 @@ const {instancesBuilder} = exploranda.dataSources.google.compute;
 const {timeSeriesBuilder} = exploranda.dataSources.google.stackdriverMonitoring;
 const {logEntriesBuilder} = exploranda.dataSources.google.stackdriverLogging;
 
-/* USAGE: node ./instancesJsonGcp.js <path-to-service-account-credential-json> <name-of-instance> <projectId>
+/* USAGE: node ./instancesJsonGcp.js <path-to-service-account-credential-json> <name-of-instance> <id-of-instance> <projectId>
  *
  * This example lists instances and graphs disk write ops for a named instance passed as an argument.
  * It requires a JSON file of service account credentials as described in 
@@ -13,7 +13,8 @@ const {logEntriesBuilder} = exploranda.dataSources.google.stackdriverLogging;
 
 const keyFilename = process.argv[2];
 const instanceName = process.argv[3];
-const projectName = process.argv[4];
+const instanceId = process.argv[4];
+const projectId = process.argv[5];
 
 const apiConfig = {keyFilename};
 
@@ -30,22 +31,33 @@ const interv = {
   endTime: {generate: () => new Date()}
 };
 
+const resourceNames = {value: [`projects/${projectId}`]};
+const filter = {
+  value: `resource.type="gce_instance"
+resource.labels.instance_id="${instanceId}"`
+};
+
 function getReport() {
   const reporter = new exploranda.Reporter();
   reporter.setSchemas({
     dependencies: {
-      instances: instancesBuilder(apiConfig, projectName, ['us-east1-b', 'us-east1-d']),
-      diskWriteOps: timeSeriesBuilder(apiConfig, projectName, sdfilter, sdAgg, interv)
+      instances: instancesBuilder(apiConfig, projectId, ['us-east1-b', 'us-east1-d']),
+      diskWriteOps: timeSeriesBuilder(apiConfig, projectId, sdfilter, sdAgg, interv),
+      logEntries: logEntriesBuilder(apiConfig, resourceNames, filter)
     },
     transformation: {
       'Instances': {
         source: 'instances',
         tableBuilder: (instances) => _.concat([null], _.map(instances, 'name'))
       },
+      'Log Entries': {
+        source: 'logEntries',
+        tableBuilder: (n) => _.concat([null], _.map(n, (line) => JSON.stringify(line)))
+      },
       [`${instanceName} Disk Write Ops`]: {
         source: 'diskWriteOps',
         tableBuilder: (diskWriteOps) => {
-          points = _.reverse(diskWriteOps[0].points);
+          points = _.reverse(_.get(diskWriteOps, '[0].points') || []);
           return [{
             title: `${instanceName} Disk Write Ops`,
             style: {line: 'red'},
@@ -62,11 +74,17 @@ function getReport() {
           row: 0,
           rowSpan: 12,
           columnSpan: 3
+        },
+        'Log Entries': {
+          column: 3,
+          row: 0,
+          rowSpan: 12,
+          columnSpan: 3
         }
       },
       lines: {
         [`${instanceName} Disk Write Ops`]: {
-          column: 3,
+          column: 6,
           row: 0,
           rowSpan: 12,
           columnSpan: 9
