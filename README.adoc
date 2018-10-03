@@ -4,7 +4,7 @@
 
 toc::[]
 
-image:https://travis-ci.org/localytics/exploranda.svg?branch=master["Build Status"]
+image:https://travis-ci.org/rluckom/exploranda.svg?branch=master["Build Status"]
 
 ## What Is This Thing?
 
