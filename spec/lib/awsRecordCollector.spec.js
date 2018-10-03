@@ -3,7 +3,8 @@ const rewire = require('rewire');
 const {kinesisStreams, kinesisStream} = require('../../lib/dataSources/aws/kinesis');
 const awsRecordCollector = rewire('../../lib/awsRecordCollector');
 
-const {lookUpRecords, sufficientParams} = awsRecordCollector;
+const {lookUpRecords} = awsRecordCollector;
+const {sufficientParams} = require('../../lib/baseRecordCollector.js');
 
 const arrayAndRecordMixedSchema = {
   name: 'servicesByClusterAndArnArray',
@@ -126,7 +127,7 @@ describe('lookupRecords', function() {
   describe('base case--no required params', function() {
     it('should just exec the request for the records', function() {
       let callbackCalled = false;
-      const params = {p1: 'p2', awsConfig: {region: 'us-east-1'}};
+      const params = {p1: 'p2', apiConfig: {region: 'us-east-1'}};
       lookUpRecords(kinesisStreams, params, (err, response) => {
         expect(response).toEqual(kinesisStreamNames.StreamNames);
         expect(err).toBeFalsy();
@@ -138,7 +139,7 @@ describe('lookupRecords', function() {
     });
     it('should allow passed params to override defaults', function() {
       let callbackCalled = false;
-      const params = {p1: 'p2', Limit: 200, awsConfig: {region: 'us-east-1'}};
+      const params = {p1: 'p2', Limit: 200, apiConfig: {region: 'us-east-1'}};
       k2 = _.cloneDeep(kinesisStreams);
       lookUpRecords(kinesisStreams, params, (err, response) => {
         expect(response).toEqual(kinesisStreamNames.StreamNames);
@@ -151,7 +152,7 @@ describe('lookupRecords', function() {
     });
     it('if the results are paginated, it gets all pages', function() {
       let callbackCalled = false;
-      const params = {p1: 'p2', Limit: 200, awsConfig: {region: 'us-east-1'}};
+      const params = {p1: 'p2', Limit: 200, apiConfig: {region: 'us-east-1'}};
       const kinesisStreamNames1 = {StreamNames: ['s1', 's2', 's3'], HasMoreStreams: true};
       const kinesisStreamNames2 = {StreamNames: ['s4', 's5', 's6']};
       lookUpRecords(kinesisStreams, params, (err, response) => {
@@ -168,7 +169,7 @@ describe('lookupRecords', function() {
     });
     it('if it needs to split up the params into groups, it does so', function() {
       let callbackCalled = false;
-      const params = {cluster: 'clusterArn', services: ['service1', 'service2', 'service3'], awsConfig: {region: 'us-east-1'}};
+      const params = {cluster: 'clusterArn', services: ['service1', 'service2', 'service3'], apiConfig: {region: 'us-east-1'}};
       const services1 = {services: ['s1', 's2']};
       const services2 = {services: ['s3']};
       lookUpRecords(arrayAndRecordMixedSchema, params, (err, response) => {
@@ -185,7 +186,7 @@ describe('lookupRecords', function() {
     });
     it('correctly merges provided and default params', function() {
       let callbackCalled = false;
-      const params = {awsConfig: {region: 'us-east-1'}, Limit: 40, cluster: 'clusterArn', services: ['service1', 'service2', 'service3']};
+      const params = {apiConfig: {region: 'us-east-1'}, Limit: 40, cluster: 'clusterArn', services: ['service1', 'service2', 'service3']};
       const services = {services: ['s1', 's2', 's3']};
       lookUpRecords(recordAndLiteralParamSchema, params, (err, response) => {
         expect(response).toEqual(['s1', 's2', 's3']);
@@ -199,7 +200,7 @@ describe('lookupRecords', function() {
     });
     it('correctly merges provided and default params', function() {
       let callbackCalled = false;
-      const params = {awsConfig: {region: 'us-east-1'}, Limit: 40, cluster: ['clusterArn1', 'clusterArn2'], services: ['service1', 'service2', 'service3']};
+      const params = {apiConfig: {region: 'us-east-1'}, Limit: 40, cluster: ['clusterArn1', 'clusterArn2'], services: ['service1', 'service2', 'service3']};
       const services = {services: ['s1', 's2', 's3']};
       lookUpRecords(recordAndLiteralParamSchemaWithMergeIndividual, params, (err, response) => {
         expect(response).toEqual(42);
@@ -215,7 +216,7 @@ describe('lookupRecords', function() {
     });
     it('if I pass a param, it uses the param', function() {
       let callbackCalled = false;
-      const params = {StreamName: 's1', awsConfig: {region: 'us-east-1'}};
+      const params = {StreamName: 's1', apiConfig: {region: 'us-east-1'}};
       const s1 = {StreamDescription: {StreamName: 's1'}};
       lookUpRecords(kinesisStream, params, (err, response) => {
         expect(response[0]).toEqual(s1.StreamDescription);
@@ -228,7 +229,7 @@ describe('lookupRecords', function() {
     });
     it('if I pass two of a param, it uses them', function() {
       let callbackCalled = false;
-      const params = {StreamName: ['s1', 's2'], awsConfig: {region: 'us-east-1'}};
+      const params = {StreamName: ['s1', 's2'], apiConfig: {region: 'us-east-1'}};
       const s1 = {StreamDescription: {StreamName: 's1'}};
       const s2 = {StreamDescription: {StreamName: 's2'}};
       lookUpRecords(kinesisStream, params, (err, response) => {
@@ -247,7 +248,7 @@ describe('lookupRecords', function() {
   describe('recursion case--required params', function() {
     it('should get the dependencies, and then the requested records', function() {
       let callbackCalled = 0;
-      const params = {p1: 'p2', awsConfig: {region: 'us-east-1'}};
+      const params = {p1: 'p2', apiConfig: {region: 'us-east-1'}};
       const returnStream1 = {StreamDescription: {StreamName: 'stream1'}};
       const returnStream2 = {StreamDescription: {StreamName: 'stream2'}};
       const returnStream3 = {StreamDescription: {StreamName: 'stream3'}};
@@ -270,7 +271,7 @@ describe('lookupRecords', function() {
     });
     it('if there are no dependencies, return no results', function() {
       let callbackCalled = 0;
-      const params = {p1: 'p2', awsConfig: {region: 'us-east-1'}};
+      const params = {p1: 'p2', apiConfig: {region: 'us-east-1'}};
       const returnStream1 = {StreamDescription: {StreamName: 'stream1'}};
       const returnStream2 = {StreamDescription: {StreamName: 'stream2'}};
       const returnStream3 = {StreamDescription: {StreamName: 'stream3'}};

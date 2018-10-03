@@ -70,7 +70,7 @@ const _ = require('lodash');
 const exploranda = require('./lib/reporter');
 const {ec2MetricsBuilder} = exploranda.dataSources.AWS.ec2;
 const instanceId = 'i-00e2c685b5bf8667f';
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const reporter = new exploranda.Reporter();
 reporter.setSchemas({
@@ -80,7 +80,7 @@ reporter.setSchemas({
     // dependency objects. See the "Dependencies" section for a more complete description.
     instanceNetworkIn: ec2MetricsBuilder(
       // AWS account and region data
-      awsConfig,
+      apiConfig,
       // The value to pass as the MetricName parameter is "NetworkPacketsIn"
       {value: 'NetworkPacketsIn'},
       // The value to pass as the Statistics parameter is the array.
@@ -89,7 +89,7 @@ reporter.setSchemas({
       {value: [{Name: 'InstanceId', Value: instanceId}]}
     ),
     instanceNetworkOut: ec2MetricsBuilder(
-      awsConfig,
+      apiConfig,
       {value: 'NetworkPacketsOut'},
       {value: ['Average', 'Maximum']},
       {value: [{Name: 'InstanceId', Value: instanceId}]}
@@ -176,7 +176,7 @@ should be, you might need to run it with:
 LANG=en_US.utf8 TERM=xterm-256color node examples/netIO.js
 ```
 
-If you only want to use this as a quick way to get JSON from the AWS APIs, you can use just
+If you only want to use this as a quick way to get JSON from APIs, you can use just
 the `dependencies` pipeline stage without specifying either of the other stages, and your data
 will be passed to a callback you provide. If you wanted, you could specify the first two stages
 and get back structured data without using the builtin `display` stage. When a 
@@ -199,17 +199,17 @@ parameters to use to get it. A very simple dependency object looks like this:
 ```javascript
 const {kinesisStreams, kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
 
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   kinesisNames: {
     accessSchema: kinesisStreams,
-    params: {awsConfig: {value: awsConfig}},
+    params: {apiConfig: {value: apiConfig}},
   },
   kinesisStreams: {
     accessSchema: kinesisStream,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       StreamName: {
         source: 'kinesisNames'
       }
@@ -233,8 +233,8 @@ of Kinesis Stream objects returned from the AWS API. Each dependency defines som
           documentation. For instance, the accessSchema `kinesisStream` in the example above specifies
           the way to use the aws `describeStreams` method, so the `params` for that dependency can include
           any parameter accepted by that method. The `StreamName` is a required parameter, so it
-          must be specified. Note that the `awsConfig` parameter is _always_ required. It is an object that
-          will be merged with the default arguments for the aws api constructor (e.g.`new AWS.ec2(awsConfig)`)
+          must be specified. Note that the `apiConfig` parameter is _always_ required. It is an object that
+          will be merged with the default arguments for the aws api constructor (e.g.`new AWS.ec2(apiConfig)`)
           so it is the place to pass `region`, `accessKeyId`, `secretAccessKey`, and `sessionToken` arguments
           to override the defaults. This allows you to specify region and aws account to use on a 
           per-dependency basis.
@@ -256,13 +256,13 @@ To specify a static value, set the `value` attribute to the value you want to us
 
 ```javascript
 const {kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   myKinesisStream: {
     accessSchema: kinesisStream,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       StreamName: {
         value: 'my-stream-name'
       }
@@ -277,13 +277,13 @@ needs to be given a time range:
 
 ```javascript
 const {kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   myKinesisStream: {
     accessSchema: kinesisStream,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       StreamName: {
         generate: () => `my-stream-name-${Date.now()}`
       }
@@ -300,17 +300,17 @@ those that include the substring `foo`:
 
 ```javascript
 const {kinesisStreams, kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   kinesisNames: {
     accessSchema: kinesisStreams,
-    params: {awsConfig: {value: awsConfig}},
+    params: {apiConfig: {value: apiConfig}},
   },
   kinesisStreams: {
     accessSchema: kinesisStream,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       StreamName: {
         source: 'kinesisNames',
         formatter: (streamNames) => streamNames.filter((s) => s.indexOf('foo') !== -1)
@@ -338,13 +338,13 @@ Your `dataDependencies` object could have as few as two entries:
 
 ```javascript
 const {serviceArnsByCluster, servicesByClusterAndArnArray} = require('exploranda').dataSources.AWS.ecs;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
   serviceArns: {
     accessSchema: serviceArnsByCluster,
     params : {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       cluster: {
         value: 'my-cluster-name'
       }
@@ -353,7 +353,7 @@ const dataDependencies = {
   services: {
     accessSchema: servicesByClusterAndArnArray,
     params: {
-      awsConfig: {value: awsConfig},
+      apiConfig: {value: apiConfig},
       cluster : {
         value: 'my-cluster-name'
       },
@@ -404,11 +404,11 @@ that usually change. The `dataDependency` above can also be implemented as:
 
 ```javascript
 const {clusterServiceArnsBuilder, servicesInClusterBuilder} = require('exploranda').dataSources.AWS.ecs;
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const dataDependencies = {
-  serviceArns: clusterServiceArnsBuilder(awsConfig, {value: 'my-cluster-name'}),
-  services: servicesInClusterBuilder(awsConfig,
+  serviceArns: clusterServiceArnsBuilder(apiConfig, {value: 'my-cluster-name'}),
+  services: servicesInClusterBuilder(apiConfig,
     {value: 'my-cluster-name'},
     {source: 'serviceArns'}
   )
@@ -755,24 +755,30 @@ people working in parallel to add any accessSchema objects as they are needed, a
 more casual users should usually find that the accessSchema object they want already
 exists or can be created and merged quickly.
 
-Right now there are two types of AccessSchema objects: AWS- and request-based. At the top level,
+Right now there are three types of AccessSchema objects: AWS, GCP, and request-based. At the top level,
 each `accessSchema` must have a `dataSource` attribute identifying the data access function that
 knows how to fulfill requests using that schema; other than that, the layout of each
 type of accessSchema is determined by the requirements of the data access function.
 
-### AWS Access Schemas
+### SDK Access Schemas
 
-The intent of the AWS accessSchema is to describe everything needed to interact with
-an AWS SDK method. for examples of AWS AccessSchema objects, look in the 
-`lib/dataSources/aws` directory.
+The intent of the SDK accessSchema is to describe everything needed to interact with
+an SDK method. For examples of AWS AccessSchema objects, look in the 
+`lib/dataSources/aws` directory. For examples of the GCP AccessSchema objects,
+look in the `lib/dataSources/gcp` directory.
 
 #### Simple fields
 
-`dataSource` (required) : must be exactly `'AWS'`
+`dataSource` (required) : must be exactly `'AWS'` for AWS AccessSchemas
+and exactly `'GOOGLE'` for GCP AccessSchemas.
 
 `name` (required) : A name expressing the data source, used in error messages
 
-`apiMethod` (required) : the AWS API method whose interface this accessSchema describes.
+`apiMethod` (required) : the API method whose interface this accessSchema describes.
+This field differs between the AWS and GCP AccessSchemas. For AWS, it is the string
+name of the method on the relevand SDK object. For GCP, it is an array with the
+parts of the API namespace after the first. For instance, the apiMethod
+for the `compute.instanceGroups.list` API is `['instanceGroups', 'list']`
 
 `incompleteIndicator` (optional) : a way to tell if the results from a call to this 
 API are incomplete and we need to get more. If this is a string or number, it is
@@ -798,12 +804,12 @@ based on the params provided (including, for now, if the params need to be chunk
 smaller groupings), the results of those calls will be merged with the `mergeIndividual`
 function.
 
-`onError` (optional) : In extremely rare cases, the AWS APIs require you to make a call before
-you know whether it can succeed. The only example of this so far is the `getBucketPolicy` S3
+`onError` (optional) : In extremely rare cases, SDK APIs require you to make a call before
+you know whether it can succeed. The only example of this so far is the AWS `getBucketPolicy` S3
 method, which can return a `NoSuchBucketPolicy` error when a bucket policy does not exist, even
 though there is no other way to check for the policy's existence beforehand. In this kind of situation
 you can provide an `onError` field in the accessSchema, which will be passed the error and
-result of the AWS call. This parameter must return an object with `err` and `res` fields, which
+result of the SDK call. This parameter must return an object with `err` and `res` fields, which
 will be treated as if they were the error and response that had been returned by the API.
 
 `mergeIndividual` (optional) : Function to merge the results of multiple calls to an API
@@ -811,7 +817,7 @@ _not_ triggered by the `incompleteIndicator`. For instance, if you pass an array
 as a parameter to a dependency whose accessSchema only takes a single ID, `mergeIndividual`
 will be used to merge the results of the individual calls to the API for each ID. But if
 you pass no params to a dependency whose accessSchema lists a resource, and the result from
-AWS is incomplete and requires subsequent requests to get all of the results, the results
+the API is incomplete and requires subsequent requests to get all of the results, the results
 of the list calls will be merged with `mergeOperator`. 
 
 The `mergeIndividual` function will be passed an array of response arrays from successive requests
@@ -820,10 +826,10 @@ To preserve the array of arrays, use `_.identity` or `(x) => x`.
 
 #### The `namespaceDetails` field
 
-The `namespaceDetails` member contains information about the namespace on the AWS
-node SDK where the apiMethod specified is found. It has two fields:
+The `namespaceDetails` member contains information about the namespace on the
+SDK where the apiMethod specified is found. It has two fields:
 
-`name` (String, required) : the exact AWS sdk namespace, e.g. `'EC2'`.
+`name` (String, required) : the exact SDK namespace, e.g. `'EC2'` for AWS or `compute` for GCP.
 
 `constructorArgs` (Object, required) : defaults to pass to the namespace constructor.
 Right now this almost always includes `region: 'us-east-1'`, but this will change
@@ -854,10 +860,10 @@ a call to this SDK method to succeed. The keys on this object are the keys that 
 be passed to the method. The values on this object provide metadata about how to 
 treat the values provided at runtime.
 
-`max` (Number) : if `shape` is ARRAY, but the length of the array is limited by AWS,
+`max` (Number) : if `shape` is ARRAY, but the length of the array is limited by the SDK,
 `max` specifies the maximum number of values allowed per call. 
 
-`defaultSource` (AWS AccessSchema) : in the fairly rare cases where you have a `describe`
+`defaultSource` (AccessSchema) : in the fairly rare cases where you have a `describe`
 API that takes an ID value and returns an object, _and_ there exists a `list` API that
 has no required parameters and returns a list of the IDs, you can attach the `accessSchema`
 of the `list` API as the `defaultSource` of the ID `requiredParam` object on the `describe`
@@ -877,7 +883,7 @@ meant to be the arguments to _multiple_ calls".
 ### Request AccessSchema Objects
 
 This accessSchema type describes a generic way to talk to HTTP / HTTPS APIs. It is
-much less mature than the AWS schema and should be expected to change. For an example
+much less mature than the SDK schema and should be expected to change. For an example
 of its use, see `lib/dataSources/elasticsearch/elasticsearch.js`
 
 #### Simple fields
@@ -893,7 +899,7 @@ params specified on the dependency object as the only argument.
 error; a sensible empty value.
 
 `incomplete` (Function) : detect if the response is incomplete. Analagous to 
-`incompleteIndicator` from the AWS access schema.
+`incompleteIndicator` from the SDK access schema.
 
 `mergeResponses` (Function) : merge the responses of successive calls when the results
 required more than one call. Analagous to `mergeOperator`.

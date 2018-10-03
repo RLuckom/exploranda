@@ -7,7 +7,7 @@ const args = parseArgs(process.argv.slice(1));
 const clusterName = args._[1];
 const keyColors = {};
 
-const awsConfig = {
+const apiConfig = {
   region: 'us-east-1'
 };
 
@@ -43,7 +43,7 @@ const clusterServiceMetricTable = metricTable('clusterServices', 'serviceName');
 
 function ec2MetricDependency(source, dimensionName, selector, extraDimensions) {
   return function(metricName, statistics) {
-    return ec2MetricsBuilder(awsConfig,
+    return ec2MetricsBuilder(apiConfig,
       {value: metricName},
       {value: statistics},
       {
@@ -62,7 +62,7 @@ function ec2MetricDependency(source, dimensionName, selector, extraDimensions) {
 
 function ecsMetricDependency(source, dimensionName, selector, extraDimensions) {
   return function(metricName, statistics) {
-    return ecsMetricsBuilder(awsConfig,
+    return ecsMetricsBuilder(apiConfig,
       {value: metricName},
       {value: statistics},
       {
@@ -125,17 +125,17 @@ function serviceElementRowTable(source) {
   };
 }
 
-const clusterServicesDep = servicesInClusterBuilder(awsConfig, {value: clusterName}, {source: 'clusterServiceArns'});
+const clusterServicesDep = servicesInClusterBuilder(apiConfig, {value: clusterName}, {source: 'clusterServiceArns'});
 
 function getReport() {
   const reporter = new exploranda.Reporter();
   reporter.setSchemas({
     dependencies: {
-      cluster: clusterBuilder(awsConfig, {value: [clusterName]}), 
-      clusterServiceArns: clusterServiceArnsBuilder(awsConfig, {value: clusterName}),
-      clusterContainerInstanceArns: clusterContainerInstanceArnsBuilder(awsConfig, {value: clusterName}),
-      clusterServices: servicesInClusterBuilder(awsConfig,{value: clusterName}, {source: 'clusterServiceArns'}),
-      clusterInstances: containerInstancesByClusterBuilder(awsConfig,{value: clusterName}, {source: 'clusterContainerInstanceArns'}),
+      cluster: clusterBuilder(apiConfig, {value: [clusterName]}), 
+      clusterServiceArns: clusterServiceArnsBuilder(apiConfig, {value: clusterName}),
+      clusterContainerInstanceArns: clusterContainerInstanceArnsBuilder(apiConfig, {value: clusterName}),
+      clusterServices: servicesInClusterBuilder(apiConfig,{value: clusterName}, {source: 'clusterServiceArns'}),
+      clusterInstances: containerInstancesByClusterBuilder(apiConfig,{value: clusterName}, {source: 'clusterContainerInstanceArns'}),
       instanceNetworkIn: clusterInstanceMetricDependency('NetworkPacketsIn', ['Average']),
       instanceNetworkOut: clusterInstanceMetricDependency('NetworkPacketsOut', ['Average']),
       instanceCpu: clusterInstanceMetricDependency('CPUUtilization', ['Maximum']),

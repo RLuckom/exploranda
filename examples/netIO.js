@@ -4,7 +4,7 @@ const parseArgs = require('minimist');
 const args = parseArgs(process.argv.slice(1));
 const instanceId = args._[1];
 
-const awsConfig = {region: 'us-east-1'};
+const apiConfig = {region: 'us-east-1'};
 
 const display = {
   lines: {
@@ -33,13 +33,13 @@ const transformation = {
     type: 'AVERAGE_MAX_LINE'
   }
 };
-const instanceNetworkIn = ec2MetricsBuilder(awsConfig,
+const instanceNetworkIn = ec2MetricsBuilder(apiConfig,
   {value: 'NetworkPacketsIn'},
   {value: ['Average', 'Maximum']},
   {value: [{Name: 'InstanceId', Value: instanceId}]}
 );
 
-const instanceNetworkOut = ec2MetricsBuilder(awsConfig,
+const instanceNetworkOut = ec2MetricsBuilder(apiConfig,
   {value: 'NetworkPacketsOut'},
   {value: ['Average', 'Maximum']},
   {value: [{Name: 'InstanceId', Value: instanceId}]}
