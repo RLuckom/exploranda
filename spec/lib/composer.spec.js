@@ -9,7 +9,7 @@ const composer = rewire('../../lib/composer.js');
 
 const {doRequest} = requestRecordCollector;
 const {lookUpRecords} = awsRecordCollector;
-const {report} = composer;
+const {Gopher} = composer;
 
 function executeTestSuite(suiteName, testCases) {
   describe(suiteName, function() {
@@ -61,7 +61,7 @@ function executeTestSuite(suiteName, testCases) {
           register(mockSchema);
         });
         setMocks();
-        report(dataDependencies, (err, response) => {
+        new Gopher(dataDependencies).report((err, response) => {
           expect(response).toEqual(expectedResult);
           _.each(mockBuilders, (mb) => {
             mb.verifyExpectations();
