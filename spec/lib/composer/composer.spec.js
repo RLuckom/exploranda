@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const {kinesisStreams, kinesisStream, kinesisStreamMetrics} = require('../../../lib/dataSources/aws/kinesis');
-const {executeTestSuite, keys} = require('../composer.spec');
+const {executeBasicTestSuite, executeCachingTestSuite, keys} = require('../composer.spec');
 
 function initialization(namespace, region) {
   return {
@@ -27,9 +27,10 @@ function successfulKinesisCall(method, args, response, noInit) {
   };
 }
 
-function kinesisNamesDependency() {
+function kinesisNamesDependency(cacheLifetime) {
   return {
     accessSchema: kinesisStreams,
+    cacheLifetime: cacheLifetime,
     params: {
       apiConfig: apiConfig(),
     }
@@ -78,11 +79,42 @@ function requestMock() {
 const basicAwsTestCase = {
   name: 'Basic Single-AWS-request case',
   dataDependencies: {
-    kinesisNames: kinesisNamesDependency()
+    // add a cacheLifetime. This testt does not rely on caching.
+    // It only makes one request. Adding a cacheLifetime should
+    // mean that the result gets cached, which should not interfere
+    // with the success of this test case.
+    kinesisNames: kinesisNamesDependency(1000)
   },
   namedMocks: {
     kinesisNames: kinesisNamesMock(),
   },
+};
+
+const basicAwsCachingTestCase = {
+  name: 'Single-source caching request case',
+  dataDependencies: {
+    kinesisNames: kinesisNamesDependency(1000)
+  },
+  phases: [
+  {
+    time: 0,
+    mocks: {
+      kinesisNames: {
+        source: 'AWS',
+        sourceConfig: successfulKinesisCall('listStreams', [{Limit: 100}], {StreamNames: ['foo', 'bar', 'baz']})
+      }
+    },
+    expectedValues: {
+      kinesisNames: ['foo', 'bar', 'baz']
+    }
+  },
+  {
+    time: 500,
+    mocks: {},
+    expectedValues: {
+      kinesisNames: ['foo', 'bar', 'baz']
+    }
+  }]
 };
 
 const incompleteRequestAwsTestCase = {
@@ -330,7 +362,7 @@ const awsWithParamFormatter = {
   implicitMocks: []
 };
 
-const testCases = [
+const basicTestCases = [
   basicAwsTestCase,
   basicAwsWithGenerator,
   requestAndOneStreamTestCase,
@@ -343,4 +375,9 @@ const testCases = [
   requestOnlyTestCase
 ];
 
-executeTestSuite('Basic report tests', testCases);
+const cachingTestCases = [
+  basicAwsCachingTestCase
+];
+
+executeBasicTestSuite('Basic report tests', basicTestCases);
+executeCachingTestSuite('Caching report tests', cachingTestCases);
