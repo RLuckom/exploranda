@@ -104,29 +104,55 @@ function executeCachingTestSuite(suiteName, testCases) {
       composer.__set__('recordCollectors', oldRecordCollectors);
     });
 
+    function compareCache(gopherCache, expectedCache) {
+      expect(_.keys(gopherCache).length).toEqual(_.keys(expectedCache).length, 'different number of cache keys');
+      _.each(expectedCache, (valuesArray, name) => {
+        expect(valuesArray.length).toEqual(_.get(gopherCache, `${name}.length`));
+        const foundValues = [];
+        _.each(valuesArray, (value) => {
+          const matchFromCache = _.find(gopherCache[name], (gopherValue) => {
+            return _.isEqual(value.r, gopherValue.r) && _.isEqual(value.collectorArgs, gopherValue.collectorArgs) && foundValues.indexOf(gopherValue) === -1;
+          });
+          if (matchFromCache) {
+            foundValues.push(matchFromCache)
+          } else {
+            console.log(`FAILURE: could not find ${JSON.stringify(value)} in ${JSON.stringify(gopherCache[name])}`);
+          }
+          expect(matchFromCache).toBeTruthy();
+        });
+      });
+    }
+
     _.each(testCases, function({name, dataDependencies, phases}) {
-      fit(name, function(done) {
+      it(name, function(done) {
         let phasesFinished = 0;
         const gopher = new Gopher(dataDependencies);
-        _.each(phases, ({time, mocks, expectedValues}) => {
+        _.each(phases, ({time, mocks, expectedValues, target, preCache, postCache}) => {
           setTimeout(() => {
             console.log(`starting phase ${phasesFinished + 1}`);
             buildMocks();
             _.each(mocks, (mockSchema, name) => {
               register(mockSchema);
-            })
+            });
             setMocks();
-            gopher.report((err, response) => {
+            if (preCache) {
+              compareCache(gopher.getCache(), preCache);
+            }
+            function testAssertionCallback(err, response) {
               expect(response).toEqual(expectedValues);
               _.each(mockBuilders, (mb) => {
                 mb.verifyExpectations();
               });
+              if (postCache) {
+                compareCache(gopher.getCache(), postCache);
+              }
               phasesFinished = phasesFinished + 1;
               console.log(`finished phase ${phasesFinished} out of ${phases.length} at ${Date.now()}`);
               if (phasesFinished === phases.length) {
                 done();
               }
-            });
+            }
+            return target ? gopher.report(target, testAssertionCallback) : gopher.report(testAssertionCallback);
           }, time);
         });
         function register({source, sourceConfig}) {

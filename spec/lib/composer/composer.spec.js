@@ -98,6 +98,7 @@ const basicAwsCachingTestCase = {
   phases: [
   {
     time: 0,
+    preCache: {},
     mocks: {
       kinesisNames: {
         source: 'AWS',
@@ -106,11 +107,66 @@ const basicAwsCachingTestCase = {
     },
     expectedValues: {
       kinesisNames: ['foo', 'bar', 'baz']
-    }
+    },
+    postCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
   },
   {
     time: 500,
     mocks: {},
+    preCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
+    postCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
+    expectedValues: {
+      kinesisNames: ['foo', 'bar', 'baz']
+    }
+  }]
+};
+
+const awsCachingTargetingTestCase = {
+  name: 'Single-source caching request case',
+  dataDependencies: {
+    kinesisNames: kinesisNamesDependency(1000),
+    kinesisStreams: {
+      accessSchema: kinesisStream,
+      params: {
+        StreamName: {source: 'kinesisNames'},
+        apiConfig: apiConfig(),
+      }
+    },
+  },
+  phases: [
+  {
+    time: 0,
+    target: 'kinesisNames',
+    preCache: {},
+    mocks: {
+      kinesisNames: {
+        source: 'AWS',
+        sourceConfig: successfulKinesisCall('listStreams', [{Limit: 100}], {StreamNames: ['foo', 'bar', 'baz']})
+      }
+    },
+    expectedValues: {
+      kinesisNames: ['foo', 'bar', 'baz']
+    },
+    postCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
+  },
+  {
+    time: 500,
+    mocks: {},
+    target: ['kinesisNames'],
+    preCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
+    postCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
     expectedValues: {
       kinesisNames: ['foo', 'bar', 'baz']
     }
@@ -376,7 +432,8 @@ const basicTestCases = [
 ];
 
 const cachingTestCases = [
-  basicAwsCachingTestCase
+  basicAwsCachingTestCase,
+  awsCachingTargetingTestCase
 ];
 
 executeBasicTestSuite('Basic report tests', basicTestCases);
