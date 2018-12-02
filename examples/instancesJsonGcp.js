@@ -87,7 +87,7 @@ function getReport() {
           column: 6,
           row: 0,
           rowSpan: 12,
-          columnSpan: 9
+          columnSpan: 6
         },
       }
     }
