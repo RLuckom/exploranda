@@ -127,6 +127,62 @@ const basicAwsCachingTestCase = {
   }]
 };
 
+const awsExpiringCacheTestCase = {
+  name: 'Single-source get, get-from-cache, get',
+  dataDependencies: {
+    kinesisNames: kinesisNamesDependency(1000)
+  },
+  phases: [
+  {
+    time: 0,
+    preCache: {},
+    mocks: {
+      kinesisNames: {
+        source: 'AWS',
+        sourceConfig: successfulKinesisCall('listStreams', [{Limit: 100}], {StreamNames: ['foo', 'bar', 'baz']})
+      }
+    },
+    expectedValues: {
+      kinesisNames: ['foo', 'bar', 'baz']
+    },
+    postCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
+  },
+  {
+    time: 500,
+    mocks: {},
+    preCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
+    postCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
+    expectedValues: {
+      kinesisNames: ['foo', 'bar', 'baz']
+    }
+  },
+  {
+    time: 1500,
+    preCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'baz']}]
+    },
+    mocks: {
+      kinesisNames: {
+        source: 'AWS',
+        sourceConfig: successfulKinesisCall('listStreams', [{Limit: 100}], {StreamNames: ['foo', 'bar', 'quux']})
+      }
+    },
+    expectedValues: {
+      kinesisNames: ['foo', 'bar', 'quux']
+    },
+    postCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar', 'quux']}]
+    },
+  }
+  ]
+};
+
 const awsCachingTargetingTestCase = {
   name: 'Single-source caching request case',
   dataDependencies: {
@@ -433,7 +489,8 @@ const basicTestCases = [
 
 const cachingTestCases = [
   basicAwsCachingTestCase,
-  awsCachingTargetingTestCase
+  awsCachingTargetingTestCase,
+  awsExpiringCacheTestCase
 ];
 
 executeBasicTestSuite('Basic report tests', basicTestCases);
