@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const {dashboard} = require('../lib/widgetReporter');
 const exploranda = require('../lib/reporter');
 const {instancesBuilder} = exploranda.dataSources.google.compute;
 const {timeSeriesBuilder} = exploranda.dataSources.google.stackdriverMonitoring;
@@ -100,4 +99,4 @@ const schema = {
   }
 };
 
-dashboard(schema);
+exploranda.widgetDashboard(schema);
