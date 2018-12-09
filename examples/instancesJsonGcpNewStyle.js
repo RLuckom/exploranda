@@ -47,7 +47,7 @@ const schema = {
     gridOptions: {},
     widgets: {
       instances: {
-        title: 'Instances',
+        title: 'Instances   ( t: %time | d: %refreshTime | min: %minRefreshTime | mean: %meanRefreshTime | max: %maxRefreshTime )',
         source: 'instances',
         refreshInterval: 5000,
         transformation: ({instances}) => _.concat([null], _.map(instances, 'name')),
