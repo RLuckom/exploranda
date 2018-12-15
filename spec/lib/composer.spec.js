@@ -26,6 +26,7 @@ function executeBasicTestSuite(suiteName, testCases) {
       mockBuilders = {
         AWS: awsMockBuilder,
         REQUEST: requestMockBuilder,
+        SYNTHETIC: {registerExpectation: _.noop, verifyExpectations: _.noop},
       };
     }
 
@@ -33,7 +34,8 @@ function executeBasicTestSuite(suiteName, testCases) {
       awsRecordCollector.__set__('AWS', awsMockBuilder.getMock());
       requestRecordCollector.__set__('request', requestMockBuilder.getMock());
       oldRecordCollectors = composer.__get__('recordCollectors');
-      composer.__set__('recordCollectors', {AWS: lookUpRecords, REQUEST: doRequest});
+      console.log(_.keys(oldRecordCollectors));
+      composer.__set__('recordCollectors', {AWS: lookUpRecords, REQUEST: doRequest, SYNTHETIC: oldRecordCollectors.SYNTHETIC});
     }
 
     afterEach(function() {

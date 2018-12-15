@@ -126,6 +126,29 @@ const requestOnlyTestCase = {
   },
 };
 
+const twoRequestAndOneSyntheticTestCase = {
+  name: 'two request and one synthetic test case',
+  dataDependencies: {
+    request: twoRequestDependency(),
+    synthetic: {
+      accessSchema: {
+        dataSource: 'SYNTHETIC',
+        transformation: ({request}) => {
+          return request[0];
+        }
+      },
+      params: {request: {source: 'request'}}
+    }
+  },
+  namedMocks: {
+    request: twoRequestMock(),
+    synthetic: {
+      source: 'SYNTHETIC',
+      expectedValue: {StreamNames: ['baz']}
+    }
+  },
+};
+
 const twoRequestTestCase = {
   name: 'two request test case',
   dataDependencies: {
@@ -527,6 +550,7 @@ const awsWithParamFormatter = {
 const basicTestCases = [
   basicAwsTestCase,
   twoRequestTestCase,
+  twoRequestAndOneSyntheticTestCase,
   basicAwsWithGenerator,
   requestAndOneStreamTestCase,
   basicAwsWithFormatter,
