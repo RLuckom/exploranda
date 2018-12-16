@@ -134,7 +134,7 @@ const twoRequestAndOneSyntheticTestCase = {
       accessSchema: {
         dataSource: 'SYNTHETIC',
         transformation: ({request}) => {
-          return request[0];
+          return request.request[0];
         }
       },
       params: {request: {source: 'request'}}
@@ -168,11 +168,11 @@ const requestAndOneStreamTestCase = {
       params: {
         StreamName: {
           source: 'request',
-          formatter: (x) => x.StreamNames[0]
+          formatter: ({request}) => request.StreamNames[0]
         },
         StreamName1: {
           source: 'request',
-          formatter: (x) => x.StreamNames[0]
+          formatter: ({request}) => request.StreamNames[0]
         },
         apiConfig: apiConfig(),
       }
@@ -359,19 +359,25 @@ const incompleteRequestAwsTestCase = {
 };
 
 const doubleSourceUseTestCase = {
-  name: 'Basic Single-AWS-request case',
+  name: 'Basic Double-AWS-request case',
   dataDependencies: {
     kinesisStreams1: {
       accessSchema: kinesisStream,
       params: {
-        StreamName: {source: 'kinesisNames'},
+        StreamName: {
+          source: 'kinesisNames',
+          formatter: ({kinesisNames}) => kinesisNames,
+        },
         apiConfig: apiConfig(),
       }
     },
     kinesisStreams2: {
       accessSchema: kinesisStream,
       params: {
-        StreamName: {source: 'kinesisNames'},
+        StreamName: {
+          source: 'kinesisNames',
+          formatter: ({kinesisNames}) => kinesisNames,
+        },
         apiConfig: apiConfig(),
       }
     },
@@ -468,7 +474,7 @@ const doubleSourceTestCase = {
         apiConfig: apiConfig(),
         StreamName: {
           source: ['mpls', 'jpl'],
-          formatter: (mpls, jpl) => `${mpls[0].StreamName}-${jpl[0].StreamName}`
+          formatter: ({mpls, jpl}) => `${mpls[0].StreamName}-${jpl[0].StreamName}`
         }
       }
     }
@@ -528,7 +534,7 @@ const awsWithParamFormatter = {
         apiConfig: apiConfig(),
         StreamName: {
           source: 'kinesisNames',
-          formatter: (names) => _.filter(names, (n) => n[0] === 'b')
+          formatter: ({kinesisNames}) => _.filter(kinesisNames, (n) => n[0] === 'b')
         }
       }
     }
