@@ -9,17 +9,8 @@ image:https://travis-ci.org/RLuckom/exploranda.svg?branch=master["Build Status"]
 ## What Is This Thing?
 
 This is a set of flexible patterns for visualizing complex systems using live data from arbitrary
-sources. It defines a three-stage pipeline: 
-
-  1. Dependencies
-  2. Transformation
-  3. Display
-
-Each stage has an associated schema object. The `dependencies` schema object enumerates the data
-required for the report and specifies how to get it. The `transformation` schema object specifies
-the way to turn the dependency data into data that can be used by the display stage. The `display`
-schema object specifies the way to present the data to the user. The core code of this tool executes
-the pipeline according to the schemas, and shows you a display like this:
+sources. The most useful feature is the ability to define a graph of dependencies to be fetched
+asynchronously, described in the Dependencies section.
 
 image:./docs/images/full_dashboard.png["Full Dashboard"]
 
@@ -212,6 +203,7 @@ const dataDependencies = {
       apiConfig: {value: apiConfig},
       StreamName: {
         source: 'kinesisNames'
+        formatter: ({kinesisNames}) => kinesisNames
       }
     }
   }
@@ -239,13 +231,17 @@ of Kinesis Stream objects returned from the AWS API. Each dependency defines som
           to override the defaults. This allows you to specify region and aws account to use on a 
           per-dependency basis.
 
-`formatter`: Function. Function to format the result of the dependency. This parameter should ce used 
-            extremely sparingly, because transforming output is properly the job of the `transformation` 
-            stage. But in some cases a small change to the output format of a dependency is warranted. 
+`formatter`: Function. Function to format the result of the dependency.
             For instance, the describeInstances AWS method always returns an array. If you filter for the
             ID of a single instance, it would make sense to use the formatter parameter to transform the
             result from an array of one instance to the instance record itself, for the convenience of
             referencing it elsewhere.
+
+`cacheLifetime`: Number (optional), Amount of time, in ms, to keep the result of a call to this
+                 dependency with a particular set of arguments cached. The arguments and dependencies
+                 are resolved _before_ the `cacheLifetime` is evaluated, so a large cacheLifetime
+                 value will _not_ short-circuit fetching any downstream dependencies--only the 
+                 `cacheLifetime` values of those dependencies control their cache behavior.
 
 #### Dependency Params
 
@@ -296,7 +292,8 @@ To specify a parameter based on the result of another dependency, provide the so
 as the `source` attribute, and an optional `formatter` function to transform the source value into
 the shape required by the call. In the following example, the `kinesisStreams` dependency will get the
 list of stream names received as the result of the `kinesisNames` dependency, filtered to only include
-those that include the substring `foo`:
+those that include the substring `foo`. Note that the `formatter` is passed an object with the 
+`source` dependencies keyed by their names:
 
 ```javascript
 const {kinesisStreams, kinesisStream} = require('exploranda').dataSources.AWS.kinesis;
@@ -313,7 +310,7 @@ const dataDependencies = {
       apiConfig: {value: apiConfig},
       StreamName: {
         source: 'kinesisNames',
-        formatter: (streamNames) => streamNames.filter((s) => s.indexOf('foo') !== -1)
+        formatter: ({streamNames}) => streamNames.filter((s) => s.indexOf('foo') !== -1)
       }
     }
   }
@@ -358,7 +355,8 @@ const dataDependencies = {
         value: 'my-cluster-name'
       },
       services: {
-        source: 'serviceArns'
+        source: 'serviceArns',
+        formatter: ({serviceArns}) => serviceArns
       }
     },
   }
@@ -420,7 +418,79 @@ abstraction layer and data structure, so it may be best to regard those that exi
 However, it is often convenient to implement such builders yourself in the context of a specific
 report.
 
-## Transformation
+## widgetDashboard Wrapper
+
+The widgetDashboard function is intended to provide an intuitive interface
+for creating CLI dashboards using the [blessed-contrib](https://github.com/yaronn/blessed-contrib)
+widget set. For an example of this wrapper, see the `examples/instancesJsonGcpNewStyle.js`
+file.
+
+The widgetDashboard function accepts a single `schema` argument; an object with a 
+`dependencies` key and a `display` key. The `dependencies` value is a dependencies schema as described
+above. 
+
+The `display` value consists of a `gridOptions` widget, which is an object that
+will override default arguments to the blessed-contrb [grid](https://github.com/yaronn/blessed-contrib#grid)
+function, and a `widgets` key.
+
+The `widgets` value must be an object of string-keyed widget schema objects.
+The keys of this object may be descriptive but are not used internally.
+
+### widget schema objects
+
+The widget schema object defines how information from the dependencies should
+be displayed on the dashboard. It accepts the following keys:
+
+`title`: The title to give the widget on the dashboard. Several
+         predefined template strings are available to display
+         metadata in the displayed title: 
+         `%time` -> wall clock time as of most recent refresh,
+         `%refreshTime` -> the time it took to get and display the current iteration,
+         `%minRefreshTime` -> the fastest iteration time, 
+         `%maxRefreshTime` -> the slowest iteration time, 
+         `%meanRefreshTime` -> the mean iteration time, 
+         `%refreshCount` -> the number of refreshes, 
+         `%totalRefreshTime` -> the total time spent fetching, 
+         `%startTime` -> the creation time of the widget.
+`source`: String or Array of names of required dependencies. It is
+          only necessary to specify the dependencies you directly
+          require--their transitive dependencies will be fetched
+          automatically.
+`refreshInterval`: How often to attempt to re-fetch dependencies and
+                   update the display. Note that the `cacheLifetime` 
+                   values of the individual dependencies determine
+                   whether an actual request is generated as a result
+                   of a given refresh attempt--a refresh attempt may
+                   be passed cached values for some or all of its dependencies.
+`displayType`: String - one of the widget types documented below under
+               the Display section for the Reporter object.
+`transformation`: Function - A function that takes an object of the
+                  dependencies listed in the `source` and returns
+                  the data formatted according to the requirements
+                  of the `displayType`. See the Display documentation
+                  under the Reporter object for specifics.
+`position`: an object specifying where to place the widget on the dashboard.
+            must specify `column`, `row`, `rowSpan` and `columnSpan`.
+            Unless overridden in the `gridOptions`, all the values
+            are relative to a 12x12 grid.
+`displayOptions`: `displayType`-specific options as specified in the
+                  Display documentation below.
+
+## Reporter Wrapper
+
+The Reporter object defines a three-stage pipeline: 
+
+  1. Dependencies
+  2. Transformation
+  3. Display
+
+Each stage has an associated schema object. The `dependencies` schema object enumerates the data
+required for the report and specifies how to get it. The `transformation` schema object specifies
+the way to turn the dependency data into data that can be used by the display stage. The `display`
+schema object specifies the way to present the data to the user. The core code of this tool executes
+the pipeline according to the schemas, and shows you a display like this:
+
+### Transformation
 
 The purpose of the transformation stage is to take the data as it was received and transform it into
 the shape required by the display. The transformation stage schema is a JavaScript object whose keys are
@@ -581,7 +651,7 @@ The `fields` attribute is the only extra attribute recognized by the `ROW_MAJOR`
 is identical to the `rows` attribute format from the `PROFILE` table type. The difference is that here it
 refers to columns.
 
-## Display
+### Display
 
 The default display renderer is a wrapper around https://github.com/yaronn/blessed-contrib[blessed-contrib]
 for displaying dashboards in the console. In order to use the display types provided by blessed-contrib,
@@ -755,7 +825,7 @@ people working in parallel to add any accessSchema objects as they are needed, a
 more casual users should usually find that the accessSchema object they want already
 exists or can be created and merged quickly.
 
-Right now there are three types of AccessSchema objects: AWS, GCP, and request-based. At the top level,
+Right now there are four types of AccessSchema objects: AWS, GCP, request-based, and synthetic. At the top level,
 each `accessSchema` must have a `dataSource` attribute identifying the data access function that
 knows how to fulfill requests using that schema; other than that, the layout of each
 type of accessSchema is determined by the requirements of the data access function.
@@ -906,3 +976,18 @@ required more than one call. Analagous to `mergeOperator`.
 
 `nextRequest` (Function): generate the parameters for the next request if the current
 results are incomplete. Analagous to `nextBatchParamConstructor`.
+
+### Synthetic AccessSchema Objects
+
+This accessSchema type provides a way to encapsulate a transformation
+of another dependency or set of dependencies that should be cached for 
+use in multiple downstream dependencies. 
+
+#### Fields
+
+`dataSource`: (required) : must be exactly `'SYNTHETIC'`
+
+`transformation`: (required) : Function, passed the resolved params
+                               as an object `{paramName: <value>`}`.
+                               The return value of this function is
+                               used as the value of this dependency.
