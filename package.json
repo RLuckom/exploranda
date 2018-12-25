@@ -28,7 +28,7 @@
     "async": "^2.6.0",
     "aws-sdk": "^2.181.0",
     "blessed": "^0.1.81",
-    "blessed-contrib": "^4.8.5",
+    "blessed-contrib": "^4.8.9",
     "googleapis": "^34.0.0",
     "lodash": "^4.17.4",
     "marked": "^0.3.19",
