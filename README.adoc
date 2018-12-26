@@ -452,27 +452,33 @@ be displayed on the dashboard. It accepts the following keys:
          `%refreshCount` -> the number of refreshes, 
          `%totalRefreshTime` -> the total time spent fetching, 
          `%startTime` -> the creation time of the widget.
+
 `source`: String or Array of names of required dependencies. It is
           only necessary to specify the dependencies you directly
           require--their transitive dependencies will be fetched
           automatically.
+
 `refreshInterval`: How often to attempt to re-fetch dependencies and
                    update the display. Note that the `cacheLifetime` 
                    values of the individual dependencies determine
                    whether an actual request is generated as a result
                    of a given refresh attempt--a refresh attempt may
                    be passed cached values for some or all of its dependencies.
+
 `displayType`: String - one of the widget types documented below under
                the Display section for the Reporter object.
+
 `transformation`: Function - A function that takes an object of the
                   dependencies listed in the `source` and returns
                   the data formatted according to the requirements
                   of the `displayType`. See the Display documentation
                   under the Reporter object for specifics.
+
 `position`: an object specifying where to place the widget on the dashboard.
             must specify `column`, `row`, `rowSpan` and `columnSpan`.
             Unless overridden in the `gridOptions`, all the values
             are relative to a 12x12 grid.
+
 `displayOptions`: `displayType`-specific options as specified in the
                   Display documentation below.
 
