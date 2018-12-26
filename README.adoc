@@ -51,8 +51,8 @@ This overarching goal led to more concrete design priorities:
 
 To install, clone this repo and run `npm install` in the root directory.
 
-To create a full report, you need to create three data structures (one corresponding to each
-of the three pipeline stages), pass them to the report executor, and execute the report. The
+To create a full report using the Reporter object, you need to create 
+three data structures, pass them to the report executor, and execute the report. The
 following example would display network data in and out of an EC2 instance on a pair of line
 charts in the console:
 

@@ -48,7 +48,7 @@ function ec2MetricDependency(source, dimensionName, selector, extraDimensions) {
       {value: statistics},
       {
         source,
-        formatter: (instances) => {
+        formatter: ({instances}) => {
           const ids = _.map(instances, selector);
           const insts = _.map(ids, (id) => {
             return _.concat([{Name: dimensionName, Value: id}], extraDimensions || []);
@@ -67,7 +67,7 @@ function ecsMetricDependency(source, dimensionName, selector, extraDimensions) {
       {value: statistics},
       {
         source,
-        formatter: (instances) => {
+        formatter: ({instances}) => {
           const ids = _.map(instances, selector);
           return _.map(ids, (id) => {
             return _.concat([{Name: dimensionName, Value: id}], extraDimensions || []);

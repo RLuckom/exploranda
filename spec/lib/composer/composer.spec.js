@@ -295,6 +295,139 @@ const awsExpiringCacheTestCase = {
   ]
 };
 
+const awsCachedDependencyRequirementTestCase = {
+  name: 'dependency found in cache',
+  dataDependencies: {
+    kinesisNames: kinesisNamesDependency(1000),
+    kinesisNames1: kinesisNamesDependency(1000),
+    kinesisStreams: {
+      accessSchema: kinesisStream,
+      cacheLifetime: 1000,
+      params: {
+        StreamName: {
+          source: ['kinesisNames', 'kinesisNames1'],
+          formatter: ({kinesisNames, kinesisNames1}) => kinesisNames1
+        },
+        apiConfig: apiConfig(),
+      }
+    },
+  },
+  phases: [
+  {
+    time: 0,
+    target: 'kinesisNames',
+    preCache: {},
+    mocks: {
+      kinesisNames: {
+        source: 'AWS',
+        sourceConfig: successfulKinesisCall('listStreams', [{Limit: 100}], {StreamNames: ['foo']})
+      }
+    },
+    expectedValues: {
+      kinesisNames: ['foo']
+    },
+    postCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}]
+    },
+  },
+  {
+    time: 300,
+    target: 'kinesisNames1',
+    preCache: {
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}]
+    },
+    mocks: {
+      kinesisNames: {
+        source: 'AWS',
+        sourceConfig: successfulKinesisCall('listStreams', [{Limit: 100}], {StreamNames: ['foo', 'bar']})
+      }
+    },
+    expectedValues: {
+      kinesisNames1: ['foo', 'bar']
+    },
+    postCache: {
+      kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}]
+    },
+  },
+  {
+    time: 500,
+    mocks: {},
+    target: ['kinesisNames'],
+    preCache: {
+      kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}]
+    },
+    postCache: {
+      kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}]
+    },
+    expectedValues: {
+      kinesisNames: ['foo'],
+    }
+  },
+  {
+    time: 700,
+    mocks: {
+      kinesisStreams: {
+        source: 'AWS',
+        sourceConfig: [
+          successfulKinesisCall('describeStream', [{StreamName: 'foo'}], {StreamDescription: {StreamName: 'fooStream'}}),
+          successfulKinesisCall('describeStream', [{StreamName: 'bar'}], {StreamDescription: {StreamName: 'barStream'}}),
+        ]
+      }
+    },
+    target: ['kinesisStreams'],
+    preCache: {
+      kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}]
+    },
+    postCache: {
+      kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}],
+      kinesisStreams: [
+      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar']}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
+      ],
+    },
+    expectedValues: {
+      kinesisNames: ['foo'],
+      kinesisNames1: ['foo', 'bar'],
+      kinesisStreams: [
+      {StreamName: 'fooStream'},
+      {StreamName: 'barStream'},
+      ],
+    }
+  },
+  {
+    time: 900,
+    mocks: {},
+    target: ['kinesisStreams'],
+    preCache: {
+      kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}],
+      kinesisStreams: [
+      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar']}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
+      ],
+    },
+    postCache: {
+      kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
+      kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}],
+      kinesisStreams: [
+      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar']}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
+      ],
+    },
+    expectedValues: {
+      kinesisNames: ['foo'],
+      kinesisNames1: ['foo', 'bar'],
+      kinesisStreams: [
+      {StreamName: 'fooStream'},
+      {StreamName: 'barStream'},
+      ],
+    }
+  },
+  ]
+};
+
 const awsCachingTargetingTestCase = {
   name: 'Single-source caching request case',
   dataDependencies: {
@@ -571,7 +704,8 @@ const basicTestCases = [
 const cachingTestCases = [
   basicAwsCachingTestCase,
   awsCachingTargetingTestCase,
-  awsExpiringCacheTestCase
+  awsExpiringCacheTestCase,
+  awsCachedDependencyRequirementTestCase,
 ];
 
 executeBasicTestSuite('Basic report tests', basicTestCases);
