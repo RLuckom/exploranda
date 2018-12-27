@@ -231,6 +231,10 @@ of Kinesis Stream objects returned from the AWS API. Each dependency defines som
           to override the defaults. This allows you to specify region and aws account to use on a 
           per-dependency basis.
 
+          Kubernetes notes: Kubernetes uses both path and querystring params; any key in the `params`
+          object that starts with `?` will be treated as a querystring param (with the leading `?` stripped).
+          All other params will be treated as path params.
+
 `formatter`: Function. Function to format the result of the dependency.
             For instance, the describeInstances AWS method always returns an array. If you filter for the
             ID of a single instance, it would make sense to use the formatter parameter to transform the
@@ -854,7 +858,12 @@ and exactly `'GOOGLE'` for GCP AccessSchemas.
 This field differs between the AWS and GCP AccessSchemas. For AWS, it is the string
 name of the method on the relevand SDK object. For GCP, it is an array with the
 parts of the API namespace after the first. For instance, the apiMethod
-for the `compute.instanceGroups.list` API is `['instanceGroups', 'list']`
+for the `compute.instanceGroups.list` API is `['instanceGroups', 'list']`. For
+Kubernetes, the `apiMethod` is the url path not including the host, with ES6 string
+interpolations for path parameters. For instance. the `apiMethod` for the
+[endpoint to get a single pod](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#-strong-read-operations-pod-v1-core-strong-) is `/api/v1/namespaces/${namespace}/pods/${name}`,
+and the `namespace` and `name` values from the `params` object will be substituted into
+the path.
 
 `incompleteIndicator` (optional) : a way to tell if the results from a call to this 
 API are incomplete and we need to get more. If this is a string or number, it is
@@ -927,7 +936,9 @@ instances / AMIs / whatever wrapped in some kind of API bookkeeping struct.
 
 This field consists of literal key-value pairs to use as default values in calls
 to this endpoint. Do not confuse this with the `params` specified on the dependency
-objects--those are _not_ literal values, and need to specify more metadata.
+objects--those are _not_ literal values, and need to specify more metadata. For 
+Kubernetes accessSchema objects, any `params`-keys beginning with `?` will be treated
+as defaults in the querystring, while the rest will be treated as defaults in the path.
 
 #### The `requiredParams` field
 
