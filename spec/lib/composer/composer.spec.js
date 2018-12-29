@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const {kinesisStreams, kinesisStream, kinesisStreamMetrics} = require('../../../lib/dataSources/aws/kinesis');
+const vaultSecrets = require('../../../lib/dataSources/vault/secrets');
 const {executeBasicTestSuite, executeCachingTestSuite, keys} = require('../composer.spec');
 
 function initialization(namespace, region) {
@@ -428,6 +429,95 @@ const awsCachedDependencyRequirementTestCase = {
   ]
 };
 
+const vaultTreeTestCase = {
+  name: 'Vault tree of requests test case',
+  dataDependencies: {
+    vaultKeys: {
+      accessSchema: vaultSecrets.tree,
+      params: {
+        token: {value: 'secretVaultToken'},
+        path: {value: 'secrets/foo/'},
+        host: {value: 'www.example.com'},
+      }
+    },
+  },
+  phases: [
+  {
+    time: 0,
+    target: 'vaultKeys',
+    preCache: {},
+    mocks: {
+      vaultKeys: {
+        source: 'VAULT',
+        sourceConfig: [{
+          callParameters: [{
+            url: 'https://www.example.com/secrets/foo/',
+            headers: {
+              'X-Vault-Token': 'secretVaultToken'
+            },
+            json: true,
+            qs: {list: true}
+          }],
+          error: null,
+          response: {statusCode: '200'},
+          body: {data: {keys: ['bar/', 'baz/']}},
+        }, {
+          callParameters: [{
+            url: 'https://www.example.com/secrets/foo/bar/',
+            headers: {
+              'X-Vault-Token': 'secretVaultToken'
+            },
+            json: true,
+            qs: {list: true}
+          }],
+          error: null,
+          response: {statusCode: '200'},
+          body: {data: {keys: ['qux', 'qux/']}},
+        }, {
+          callParameters: [{
+            url: 'https://www.example.com/secrets/foo/baz/',
+            headers: {
+              'X-Vault-Token': 'secretVaultToken'
+            },
+            json: true,
+            qs: {list: true}
+          }],
+          error: null,
+          response: {statusCode: '200'},
+          body: {data: {keys: []}},
+        }, {
+          callParameters: [{
+            url: 'https://www.example.com/secrets/foo/bar/qux/',
+            headers: {
+              'X-Vault-Token': 'secretVaultToken'
+            },
+            json: true,
+            qs: {list: true}
+          }],
+          error: null,
+          response: {statusCode: '200'},
+          body: {data: {keys: ['bax']}},
+        }],
+      }
+    },
+    expectedValues: {
+      vaultKeys: [{
+        'bar/': {
+          qux: {__isSecret: true},
+          'qux/': {
+            bax: {
+              __isSecret: true
+            },
+          }
+        },
+        'baz/': {}
+      }],
+    },
+    postCache: {},
+  },
+  ]
+};
+
 const awsCachingTargetingTestCase = {
   name: 'Single-source caching request case',
   dataDependencies: {
@@ -703,6 +793,7 @@ const basicTestCases = [
 
 const cachingTestCases = [
   basicAwsCachingTestCase,
+  vaultTreeTestCase,
   awsCachingTargetingTestCase,
   awsExpiringCacheTestCase,
   awsCachedDependencyRequirementTestCase,
