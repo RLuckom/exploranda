@@ -876,7 +876,8 @@ for the next call to the API when the `incompleteIndicator` shows that this is a
 partial result. This function is called with two arguments: the parameters used
 for the most recent call and the result of the most recent call. its return value
 should be the parameters to use in the next call. This field must be specified if
-the `incompleteIndicator` is specified.
+the `incompleteIndicator` is specified. If this function returns an array, the 
+objects in the array will each be treated as params to a separate call.
 
 `mergeOperator` (optional) : Function to merge the results of multiple successive
 calls to get the complete results. This function is called after _every_ call after
@@ -887,7 +888,9 @@ the response from a _single_ call is incomplete, and further calls must be made 
 get the remainder of the results. In cases when more than one call needs to be made
 based on the params provided (including, for now, if the params need to be chunked into
 smaller groupings), the results of those calls will be merged with the `mergeIndividual`
-function.
+function. If the `nextBatchParamConstructor` function returns an array, the arguments
+to the `mergeOperator` function will be the results of the current call and an array containing
+the results of _all_ downstream calls.
 
 `onError` (optional) : In extremely rare cases, SDK APIs require you to make a call before
 you know whether it can succeed. The only example of this so far is the AWS `getBucketPolicy` S3
