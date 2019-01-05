@@ -28,6 +28,39 @@ function successfulKinesisCall(method, args, response, noInit) {
   };
 }
 
+const kinesisStreamWithAnotherParam = {
+  dataSource: 'AWS',
+  name: 'kinesisStream',
+  namespaceDetails: {
+    name: 'Kinesis',
+    constructorArgs: {}
+  },
+  value: {
+    path: 'StreamDescription',
+  },
+  apiMethod: 'describeStream',
+  params: {
+  },
+  requiredParams: {
+    otherParam: {},
+    StreamName: {
+      defaultSource: kinesisStreams
+    }
+  },
+  incompleteIndicator: 'StreamDescription.HasMoreShards',
+  nextBatchParamConstructor: (params, stream) => {
+    const lastShardIndex = stream.StreamDescription.Shards.length - 1;
+    const lastShardId = stream.StreamDescription.Shards[lastShardIndex].shardId;
+    return _.merge(params, {ExclusiveStartShardId: lastShardId});
+  },
+  mergeOperator: (stream1, stream2) => {
+    stream2.StreamDescription.Shards = [].concat(
+      stream1.StreamDescription.Shards,
+      stream2.StreamDescription.Shards
+    );
+  }
+};
+
 function kinesisNamesDependency(cacheLifetime) {
   return {
     accessSchema: kinesisStreams,
@@ -755,6 +788,33 @@ const dependentAwsTestCase = {
   ]
 };
 
+const dependentAwsTestCaseWithOneValue = {
+  name: 'Basic dependent-AWS-request case',
+  dataDependencies: {
+    kinesisName: {
+      accessSchema: kinesisStreamWithAnotherParam,
+      params: {
+        otherParam: {value: ['foo', 'bar', 'baz']},
+        apiConfig: apiConfig(),
+      }
+    }
+  },
+  namedMocks: {
+    kinesisName: {
+      source: 'AWS',
+      sourceConfig: [
+        successfulKinesisCall('describeStream', [{StreamName: 'foo', otherParam: 'foo'}], {StreamDescription: {StreamName: 'fooStream'}}),
+        successfulKinesisCall('describeStream', [{StreamName: 'bar', otherParam: 'bar'}], {StreamDescription: {StreamName: 'barStream'}}),
+        successfulKinesisCall('describeStream', [{StreamName: 'baz', otherParam: 'baz'}], {StreamDescription: {StreamName: 'bazStream'}}),
+      ],
+      expectedValue: _.map(['foo', 'bar', 'baz'], (s) => {return {StreamName: `${s}Stream`};})
+    }
+  },
+  implicitMocks: [
+    kinesisNamesMock(),
+  ]
+};
+
 const awsWithParamFormatter = {
   name: 'Basic Single-AWS-request case, with a param formatter',
   dataDependencies: {
@@ -793,6 +853,7 @@ const basicTestCases = [
   basicAwsWithFormatter,
   awsWithParamFormatter,
   dependentAwsTestCase,
+  dependentAwsTestCaseWithOneValue,
   doubleSourceTestCase,
   doubleSourceUseTestCase,
   incompleteRequestAwsTestCase,
