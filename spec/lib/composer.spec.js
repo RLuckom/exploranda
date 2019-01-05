@@ -4,13 +4,13 @@ const {awsMock} = require('../awsMock');
 const {requestMock} = require('../requestMock');
 const rewire = require('rewire');
 const awsRecordCollector = rewire('../../lib/awsRecordCollector');
-const vaultRecordCollector = rewire('../../lib/vaultRecordCollector');
+const genericApiRecordCollector = rewire('../../lib/genericApiRecordCollector');
 const requestRecordCollector = rewire('../../lib/requestRecordCollector');
 const composer = rewire('../../lib/composer.js');
 
 const {doRequest} = requestRecordCollector;
 const {lookUpRecords} = awsRecordCollector;
-const vaultLookupRecords = vaultRecordCollector.lookUpRecords;
+const genericApiLookupRecords = genericApiRecordCollector.lookUpRecords;
 const {Gopher} = composer;
 
 function executeBasicTestSuite(suiteName, testCases) {
@@ -20,17 +20,17 @@ function executeBasicTestSuite(suiteName, testCases) {
     beforeEach(function() {
       oldExecRecordRequest = awsRecordCollector.__get__('AWS');
       oldRequestRequest = requestRecordCollector.__get__('request');
-      oldVaultRequest = vaultRecordCollector.__get__('request');
+      oldVaultRequest = genericApiRecordCollector.__get__('request');
     });
 
     function buildMocks() {
       awsMockBuilder = awsMock();
       requestMockBuilder = requestMock();
-      vaultMockBuilder = requestMock();
+      genericApiMockBuilder = requestMock();
       mockBuilders = {
         AWS: awsMockBuilder,
         REQUEST: requestMockBuilder,
-        VAULT: vaultMockBuilder,
+        GENERIC_API: genericApiMockBuilder,
         SYNTHETIC: {registerExpectation: _.noop, verifyExpectations: _.noop},
       };
     }
@@ -38,12 +38,12 @@ function executeBasicTestSuite(suiteName, testCases) {
     function setMocks() {
       awsRecordCollector.__set__('AWS', awsMockBuilder.getMock());
       requestRecordCollector.__set__('request', requestMockBuilder.getMock());
-      vaultRecordCollector.__set__('request', vaultMockBuilder.getMock());
+      genericApiRecordCollector.__set__('request', genericApiMockBuilder.getMock());
       oldRecordCollectors = composer.__get__('recordCollectors');
       composer.__set__('recordCollectors', {
         AWS: lookUpRecords,
         REQUEST: doRequest,
-        VAULT: vaultLookupRecords,
+        GENERIC_API: genericApiLookupRecords,
         SYNTHETIC: oldRecordCollectors.SYNTHETIC
       });
     }
@@ -92,16 +92,16 @@ function executeCachingTestSuite(suiteName, testCases) {
     beforeEach(function() {
       oldExecRecordRequest = awsRecordCollector.__get__('AWS');
       oldRequestRequest = requestRecordCollector.__get__('request');
-      oldVaultRequest = vaultRecordCollector.__get__('request');
+      oldVaultRequest = genericApiRecordCollector.__get__('request');
     });
 
     function buildMocks() {
       awsMockBuilder = awsMock();
       requestMockBuilder = requestMock();
-      vaultMockBuilder = requestMock();
+      genericApiMockBuilder = requestMock();
       mockBuilders = {
         AWS: awsMockBuilder,
-        VAULT: vaultMockBuilder,
+        GENERIC_API: genericApiMockBuilder,
         REQUEST: requestMockBuilder,
       };
     }
@@ -109,12 +109,12 @@ function executeCachingTestSuite(suiteName, testCases) {
     function setMocks() {
       awsRecordCollector.__set__('AWS', awsMockBuilder.getMock());
       requestRecordCollector.__set__('request', requestMockBuilder.getMock());
-      vaultRecordCollector.__set__('request', vaultMockBuilder.getMock());
+      genericApiRecordCollector.__set__('request', genericApiMockBuilder.getMock());
       oldRecordCollectors = composer.__get__('recordCollectors');
       composer.__set__('recordCollectors', {
         AWS: lookUpRecords,
         REQUEST: doRequest,
-        VAULT: vaultLookupRecords,
+        GENERIC_API: genericApiLookupRecords,
       });
     }
 

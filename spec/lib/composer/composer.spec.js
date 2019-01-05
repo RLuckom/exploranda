@@ -435,7 +435,7 @@ const vaultTreeTestCase = {
     vaultKeys: {
       accessSchema: vaultSecrets.tree,
       params: {
-        token: {value: 'secretVaultToken'},
+        'X-Vault-Token' : {value: 'secretVaultToken'},
         path: {value: 'secrets/foo/'},
         host: {value: 'www.example.com'},
       }
@@ -448,15 +448,17 @@ const vaultTreeTestCase = {
     preCache: {},
     mocks: {
       vaultKeys: {
-        source: 'VAULT',
+        source: 'GENERIC_API',
         sourceConfig: [{
           callParameters: [{
             url: 'https://www.example.com/secrets/foo/',
+            method: 'GET',
+            qs: {list: true},
             headers: {
               'X-Vault-Token': 'secretVaultToken'
             },
+            body: null,
             json: true,
-            qs: {list: true}
           }],
           error: null,
           response: {statusCode: '200'},
@@ -464,11 +466,13 @@ const vaultTreeTestCase = {
         }, {
           callParameters: [{
             url: 'https://www.example.com/secrets/foo/bar/',
+            method: 'GET',
+            qs: {list: true},
             headers: {
               'X-Vault-Token': 'secretVaultToken'
             },
+            body: null,
             json: true,
-            qs: {list: true}
           }],
           error: null,
           response: {statusCode: '200'},
@@ -476,11 +480,13 @@ const vaultTreeTestCase = {
         }, {
           callParameters: [{
             url: 'https://www.example.com/secrets/foo/baz/',
+            method: 'GET',
+            qs: {list: true},
             headers: {
               'X-Vault-Token': 'secretVaultToken'
             },
+            body: null,
             json: true,
-            qs: {list: true}
           }],
           error: null,
           response: {statusCode: '200'},
@@ -488,11 +494,13 @@ const vaultTreeTestCase = {
         }, {
           callParameters: [{
             url: 'https://www.example.com/secrets/foo/bar/qux/',
+            method: 'GET',
+            qs: {list: true},
             headers: {
               'X-Vault-Token': 'secretVaultToken'
             },
+            body: null,
             json: true,
-            qs: {list: true}
           }],
           error: null,
           response: {statusCode: '200'},

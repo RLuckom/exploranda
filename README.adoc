@@ -14,7 +14,7 @@ asynchronously, described in the Dependencies section.
 
 image:./docs/images/full_dashboard.png["Full Dashboard"]
 
-## Intended Uses and Design
+## Design / Purpose
 
 I use this to build dashboards for systems I need to monitor and understand, a process
 that I think of as a form of note-taking. This tool is different from other monitoring systems
@@ -970,9 +970,81 @@ parameters whether what it sees is "an array of Dimension objects, to be sent as
 Dimensions parameter in a single call" or "an array of _arrays_ of Dimension objects,
 meant to be the arguments to _multiple_ calls".
 
+### AccessSchema Object Extensions for Generic Request-Based APIs
+
+For many common APIs it is simpler to just use https://github.com/request/request[request js] 
+as the base SDK and build accessSchema objects to provide a natural pattern
+for interacting with the resources and access methods exposed by the API.
+
+To accomodate this use case, there is a `GENERIC_API` data source function
+that wraps `request`. `GENERIC_API` accessSchema objects may set all the
+fields allowed on ordinary SDK accessSchema objects (defined above) and may
+also set the following fields to configure how requests to their API should be made:
+
+`params.path`: the path part of the URL. May be specified as a JS template
+               string to be rendered with parameter values, e.g.                `'/api/v1/users/${userName}`
+
+`params.method`: the HTTP method to use in the request. Defaults to `GET`
+
+`pathParamKeys`: Generic APIs may specify the path part of their url as a
+                 JS template string, e.g. `'/api/v1/users/${userName}'`.
+                 The `pathParamKeys` accessSchema field is an array
+                 of the names of parameters to be used as values in that
+                 template, e.g. `['userName']`.
+
+`queryParamKeys`: an array of the names of parameters to be used as key / value
+                  pairs in the request querystring
+
+`bodyParamKeys`: an array of the names of parameters to be used as key / value
+                  pairs in the request body.
+
+`headerParamKeys`: an array of the names of parameters to be used as the request headers.
+
+`urlBuilder`: A function that will construct the URL given the
+              parameters specified in the `pathParamKeys` array.
+              If not specified, defaults to a function that
+              uses the params to render the `params.path || sourceSchema.params.path`
+              as if it was a JS template string.
+
+`requestQueryBuilder`: A function that will construct the URL query object
+              given the parameters specified in the `queryParamKeys` array.
+              If not specified, defaults to `_.identity`
+
+`requestBodyBuilder`: A function that will construct the URL body
+              given the parameters specified in dthe `bodyParamKeys` array.
+              If not specified, defaults to `_.identity`
+
+`requestHeadersBuilder`: A function that will construct the URL headers object
+              given the parameters specified in the `headerParamKeys` array.
+              If not specified, defaults to `_.identity`
+
+In addition, there are parameters that are specific to dependencies that use the `GENERIC_API` accessSchema objects:
+
+`host` : [Required] the host to which to make the request (cannot include protocol, should include port if neccessary)
+
+`path`: path part of the URL. See `params.path` above.
+
+`method`: HTTP method. See `params.method` above.
+
+`apiConfig.ca` : If provided, sets a CA for request to use when validating 
+                 the server certificate.
+
+`apiConfig.cert`: If provided, a client certificate to use in the request
+
+`apiConfig.key`: If provided, a client certificate key to use in the request
+
+`apiConfig.passphrase`: If provided, a passphrase to unlock the client certificate key to use in the request
+
+`apiConfig.user`: If provided, a username to use in the request auth
+
+`apiConfig.pass`: If provided, a password to use in the request auth
+
+`apiConfig.token`: If provided, a bearer token to use in the request auth.
+                   This will override user:pass auth if both are provided.
+
 ### Request AccessSchema Objects
 
-This accessSchema type describes a generic way to talk to HTTP / HTTPS APIs. It is
+This accessSchema type describes a basic way to talk to HTTP / HTTPS APIs. It is
 much less mature than the SDK schema and should be expected to change. For an example
 of its use, see `lib/dataSources/elasticsearch/elasticsearch.js`
 
