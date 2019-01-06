@@ -34,3 +34,13 @@ This change does have a downside; it is now necessary to use a `formatter` funct
 every parameter that comes from a `source`. If no `formatter` is provided, the parameter value
 passed to the executor will be the map that would have ben passed to the `formatter`, rather than
 the raw value.
+
+3.0.0
+
+This introduces two breaking changes. The elasticsearch accessschemas have been converted to 
+`GENERIC_API` and indexStats has been replaced with clusterHealth.
+
+Second, the Kubernetes and Vault integrations have been converted to `GENERIC_API`. The
+most significant change is that those access schemas now specify which params are used
+in which parts of the request object and new params need to be specified in the
+access schema to be used.
