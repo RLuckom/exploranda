@@ -231,10 +231,6 @@ of Kinesis Stream objects returned from the AWS API. Each dependency defines som
           to override the defaults. This allows you to specify region and aws account to use on a 
           per-dependency basis.
 
-          Kubernetes notes: Kubernetes uses both path and querystring params; any key in the `params`
-          object that starts with `?` will be treated as a querystring param (with the leading `?` stripped).
-          All other params will be treated as path params.
-
 `formatter`: Function. Function to format the result of the dependency.
             For instance, the describeInstances AWS method always returns an array. If you filter for the
             ID of a single instance, it would make sense to use the formatter parameter to transform the
@@ -939,16 +935,20 @@ instances / AMIs / whatever wrapped in some kind of API bookkeeping struct.
 
 This field consists of literal key-value pairs to use as default values in calls
 to this endpoint. Do not confuse this with the `params` specified on the dependency
-objects--those are _not_ literal values, and need to specify more metadata. For 
-Kubernetes accessSchema objects, any `params`-keys beginning with `?` will be treated
-as defaults in the querystring, while the rest will be treated as defaults in the path.
+objects--those are _not_ literal values, and need to specify more metadata. 
 
-#### The `requiredParams` field
+#### The `requiredParams`  and `optionaParams` fields
 
-This object specifies the values that _must_ be filled in at runtime in order for
+The `requiredParams` object specifies the values that _must_ be filled in at runtime in order for
 a call to this SDK method to succeed. The keys on this object are the keys that will
 be passed to the method. The values on this object provide metadata about how to 
 treat the values provided at runtime.
+
+The `optionalParams` object is structured exactly like the `requiredParams` object,
+but exploranda will not throw an error if these params aren't specified at runtime.
+You can still pass arbitrary parameters even if they are not specified in the
+`optionalParams` object--this object simply allows you to specify metatdata about
+the parameters.
 
 `max` (Number) : if `shape` is ARRAY, but the length of the array is limited by the SDK,
 `max` specifies the maximum number of values allowed per call. 
@@ -1060,7 +1060,7 @@ params specified on the dependency object as the only argument.
 `defaultResponse` : if `ignoreErrors` is truthy, a response to use when there is an
 error; a sensible empty value.
 
-`incomplete` (Function) : detect if the response is incomplete. Analagous to 
+`incomplete` (Function) : detect if the response is incomplete. Analogous to 
 `incompleteIndicator` from the SDK access schema.
 
 `mergeResponses` (Function) : merge the responses of successive calls when the results
