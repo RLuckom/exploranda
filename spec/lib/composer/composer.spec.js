@@ -876,6 +876,33 @@ const dependentAwsTestCaseWithAnOptionalParam = {
   ]
 };
 
+const dependentAwsTestCaseWithAnOptionalParamSpecifiedSingly = {
+  name: 'Test case with an optional param specified in the accessschema and provided as a single value',
+  dataDependencies: {
+    kinesisName: {
+      accessSchema: kinesisStreamWithANonRequiredParam,
+      params: {
+        otherParam: {value: 'foo'},
+        apiConfig: apiConfig(),
+      }
+    }
+  },
+  namedMocks: {
+    kinesisName: {
+      source: 'AWS',
+      sourceConfig: [
+        successfulKinesisCall('describeStream', [{StreamName: 'foo', otherParam: 'foo'}], {StreamDescription: {StreamName: 'fooStream'}}),
+        successfulKinesisCall('describeStream', [{StreamName: 'bar', otherParam: 'foo'}], {StreamDescription: {StreamName: 'barStream'}}),
+        successfulKinesisCall('describeStream', [{StreamName: 'baz', otherParam: 'foo'}], {StreamDescription: {StreamName: 'bazStream'}}),
+      ],
+      expectedValue: _.map(['foo', 'bar', 'baz'], (s) => {return {StreamName: `${s}Stream`};})
+    }
+  },
+  implicitMocks: [
+    kinesisNamesMock(),
+  ]
+};
+
 const dependentAwsTestCaseWithAnUnspecifiedOptionalParam = {
   name: 'Test case with an Optional Param specified in the accessschema but not provided',
   dataDependencies: {
@@ -943,6 +970,7 @@ const basicTestCases = [
   dependentAwsTestCaseWithOneValue,
   dependentAwsTestCaseWithAnOptionalParam,
   dependentAwsTestCaseWithAnUnspecifiedOptionalParam,
+  dependentAwsTestCaseWithAnOptionalParamSpecifiedSingly,
   doubleSourceTestCase,
   doubleSourceUseTestCase,
   incompleteRequestAwsTestCase,
