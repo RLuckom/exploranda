@@ -503,8 +503,12 @@ const vaultTreeTestCase = {
       accessSchema: vaultSecrets.tree,
       params: {
         'X-Vault-Token' : {value: 'secretVaultToken'},
-        path: {value: 'secrets/foo/'},
-        host: {value: 'www.example.com'},
+        apiConfig: {
+          value: {
+            path: 'secrets/foo/',
+            host: 'www.example.com'
+          }
+        }
       }
     },
   },

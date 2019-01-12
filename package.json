@@ -33,6 +33,7 @@
     "lodash": "^4.17.4",
     "marked": "^0.3.19",
     "moment": "^2.22.2",
+    "parse-link-header": "^1.0.1",
     "request": "^2.86.0"
   },
   "devDependencies": {

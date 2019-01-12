@@ -6,50 +6,126 @@ toc::[]
 
 image:https://travis-ci.org/RLuckom/exploranda.svg?branch=master["Build Status"]
 
-## What Is This Thing?
-
-This is a set of flexible patterns for visualizing complex systems using live data from arbitrary
-sources. The most useful feature is the ability to define a graph of dependencies to be fetched
-asynchronously, described in the Dependencies section.
-
 image:./docs/images/full_dashboard.png["Full Dashboard"]
 
-## Design / Purpose
+## Introduction
 
-I use this to build dashboards for systems I need to monitor and understand, a process
-that I think of as a form of note-taking. This tool is different from other monitoring systems
-in that it prioritizes flexibility over every other design consideration. For instance,
-using this tool, you can build a report that displays several AWS CloudWatch metrics in
-a graph. That is something that you can also do in CloudWatch, and it's probably easier 
-to do in CloudWatch. But in this system, you can add another graph to the same report that
-pulls data from an ElasticSearch cluster. Again, if you have a third-party monitoring system,
-you can probably create a similar report there, and perhaps with a nice graph-builder UI.
-But in this system, you can also add a box displaying a `tail` view of your actual log files,
-or any other kind of data you can get from any source.
+Exploranda is a powerful, flexible, and efficient nodejs library for fetching and
+combining data from APIs. It also uses [blessed-contrib](https://github.com/yaronn/blessed-contrib)
+to provide basic visualization capabilities.
 
-My experience has been that, although there is usually a better tool for any single data
-modality (online graph-centric third-party monitoring tools, ELK, CLIs providing metrics to
-systems like Docker and Redis), every complex system quickly reaches a point where understanding
-it requires cutting _across_ those data modalities. I want to know the load average of my container-based
-service, but I _also_ want to know which instance is hosting a particular container _and_ I 
-want to keep an eye on certain domain-specific attributes, even if getting them requires some kind
-of crazy Rube Goldberg contraption not supported by any existing monitoring system. And I want a
-way to tie all these things together so nicely that all of my hard-won contextual knowledge of a
-system is available to anyone in my organization who needs it, _especially_ when I'm on vacation. 
+Exploranda's data-gathering module allows you to represent data from APIs
+(such as compute instances from AWS or Google Cloud, records from Elasticsearch,
+KV pairs from Vault, or anything else) as a dependency graph. Each individual
+dependency is represented as an `accessSchema` object describing how to interact
+with the API, a set of parameters to use to generate calls to the API, and optional
+values controlling the dependency's cache lifetime and postprocessing. The parameters
+used to generate the API calls can be literal values, runtime-generated values,
+or values computed from the results of other dependencies. Exploranda comes with
+builtin `accessSchema` objects for several popular APIs and allows you to define your
+own if what you're looking for doesn't exist yet. PRs welcome!
 
-This overarching goal led to more concrete design priorities:
+I use exploranda:
 
-  1. What you choose to display and how you choose to display it are completely under
-     your control.
-  2. The core should focus on providing powerful, mid-level abstractions without assuming
-     too much about a report-implementer's intent. In the `dependencies` stage, provide a simple
-     pattern for describing what data to get. In the `transformation` stage. provide utility
-     functions for common cases but allow implementers to ignore them. In the `display` stage,
-     provide options that are simple, adequate, and optional.
+* To "take notes" on deployed infrastructure by building dashboards to represent it
+* To perform one-time or throwaway analysis tasks too complex for `curl` plus `jq`
+* To explore new APIs
+* To "test drive" monitoring ideas before investing the effort of integrating them into existing systems.
+
+Exploranda is not designed for use cases that require modifying data in APIs
+(such as PUT requests and many POST requests, etc.).
+
+## Design
+
+APIs come in all shapes and sizes. Some use HTTP, some use HTTPS. Some
+return JSON, others HTML, XML, or unstructured plain text. Sometimes
+the information you want isn't exposed on an API at all, and you need
+to get it in some other way, like by SSH-ing into a machine. Exploranda's
+goal is to provide in one library a flexible, unopinionated way to 
+bring together data from any number of sources, regardless of differences
+between them. 
+
+To achieve this goal, Exploranda defines a series of object types. From a
+library user's point of view, the following list reflects a gradient from the
+simplest user-facing objects to the most complex internally-defined objects.
+From a library contributor's point of view, it reflects a gradient from
+the most domain-specific types to the most generic types.
+
+### 1. Dependency Objects
+A dependency object represents a specific piece of information that a 
+user wants, such as "the list of all my compute instances" or "a set 
+of records from elasticsearch." A dependency object references an `accessSchema`
+for interacting with a particular data source, and the parameters required
+by that `accessSchema` to get the requested data. The dependency object may
+also include some bookkeeping settings such as how long responses should be
+cached, etc. All library users will need to write dependency objects.
+
+The parameters specified in a dependency object may be literal values,
+values generated at runtime, or instructions for creating values based
+on the results of other dependencies. The basic user-facing data access
+concept is the graph of dependency objects, specified as "name:dependency object"
+pairs.
+
+### 2. `accessSchema` Objects
+`accessSchema` objects represent the generic information about how to
+interact with a particular `dataSource`. In addition to specifying the 
+`dataSource` they are designed for, They include details about how an API
+is paginated, what its responses look like, and specific limits on calling
+it. In cases where a special library is used to interact with an API,
+such as the AWS and Google node SDKs, the `accessSchema` object includes
+information about how to instantiate the SDK object required to make 
+the request. Some library users may need to write `accessSchema` objects
+and are encouraged to consider opening PRs to contribute useful ones
+back upstream as builtins.
+
+### 3. `recordCollector` Functions
+`recordCollector` functions are responsible for asynchronously getting 
+data from a `dataSource`. For each `dataSource`, a single `recordCollector`
+function exists. This function's job is to parse an `accessSchema` and a set
+of parameters, make calls to its `dataSource`, and send the results to a callback.
+None of the previous object types in this hierarchy may make asynchronous
+calls; the `recordCollector` and the subsequent objects do. Library users 
+should not need to write their own `recordCollector` functions.
+
+### 4. The `Gopher` object
+The `Gopher` object contains the logic for reading a graph of dependency
+objects, determining the correct order in which to fetch them, using
+each dependency's specified `accessSchema`, parameters, and the `recordCollector`
+specified by the access schema to collect the value from the `dataSource`,
+and using the values collected to construct the parameters of subsequent
+dependencies that require them.
+
+### 5. `Reporter` objects
+`Reporter` objects wrap the `Gopher` object and provide additional
+reporting capabilities, such as creating console displays. 
 
 ## Getting Started
 
-To install, clone this repo and run `npm install` in the root directory.
+Github, our lovely hosts, provide [API documentation](https://developer.github.com/v3/) for their
+service. Though it's a bit harder to find, [so do the fine folks at npm](https://github.com/npm/registry/blob/master/docs/REGISTRY-API.md).
+As an example project, we'll use Exploranda to collect information about
+itself from those two sources. You'll need a recent version of NodeJS
+and `npm`.
+
+First, in a new directory, install exploranda:
+
+`npm install --save exploranda`
+
+Exploranda includes a set of built-in `accessSchema` objects for the
+Github API. This tutorial will not go into detail on how to create them;
+for that, see the Creating AccessSchema Objects documentation.
+
+As a practice task, let's write a report that takes a commit hash
+and figures out how often in the past six months that commit has been
+downloaded as part of the exploranda package from npm. We'll assume that
+a commit is part of all downloads that happened after the release following
+its addition to the repo (this is probably not true for any number of reasons,
+but whatever). 
+
+For this report, we'll need tho determine when the commit showed up in the
+repo. We'll also need the full list of npm releases. Then when we determine
+which releases occurred after the commit landed in the repo, we'll need to retrieve
+download counts starting at the next release.
 
 To create a full report using the Reporter object, you need to create 
 three data structures, pass them to the report executor, and execute the report. The
@@ -981,10 +1057,15 @@ that wraps `request`. `GENERIC_API` accessSchema objects may set all the
 fields allowed on ordinary SDK accessSchema objects (defined above) and may
 also set the following fields to configure how requests to their API should be made:
 
-`params.path`: the path part of the URL. May be specified as a JS template
-               string to be rendered with parameter values, e.g.                `'/api/v1/users/${userName}`
+`path`: the path part of the URL. May be specified as a JS template
+        string to be rendered with parameter values, e.g. `'/api/v1/users/${userName}`
 
-`params.method`: the HTTP method to use in the request. Defaults to `GET`
+`method`: the HTTP method to use in the request. Defaults to `GET`
+
+`host`: the host and port to which to make the request, e.g. `google.com:443`
+        The port need not be specified if it is the default for the protocol.
+
+`protocol`: the protocol string. Defaults to `https://`
 
 `pathParamKeys`: Generic APIs may specify the path part of their url as a
                  JS template string, e.g. `'/api/v1/users/${userName}'`.
@@ -1020,11 +1101,13 @@ also set the following fields to configure how requests to their API should be m
 
 In addition, there are parameters that are specific to dependencies that use the `GENERIC_API` accessSchema objects:
 
-`host` : [Required] the host to which to make the request (cannot include protocol, should include port if neccessary)
+`apiConfig.host` : [Required] the host to which to make the request (cannot include protocol, should include port if neccessary)
 
-`path`: path part of the URL. See `params.path` above.
+`apiConfig.path`: path part of the URL. See `path` above.
 
-`method`: HTTP method. See `params.method` above.
+`apiConfig.method`: HTTP method. See `method` above. defaults to `GET`
+
+`apiConfig.protocol`: protocol string. See `protocol` above. defaults to `https://`
 
 `apiConfig.ca` : If provided, sets a CA for request to use when validating 
                  the server certificate.
@@ -1041,6 +1124,18 @@ In addition, there are parameters that are specific to dependencies that use the
 
 `apiConfig.token`: If provided, a bearer token to use in the request auth.
                    This will override user:pass auth if both are provided.
+
+`apiConfig.pathParamKeys`: If provided, will be concatenated with the sourceSchema's `pathParamKeys`
+                           array described above.
+
+`apiConfig.queryParamKeys`: If provided, will be concatenated with the sourceSchema's 
+                            `queryParamKeys` array described above.
+
+`apiConfig.headerParamKeys`: If prsovided, will be concatenated with the sourceSchema's 
+                             `headerParamKeys` array described above.
+
+`apiConfig.bodyParamKeys`: If provided, will be concatenated with the sourceSchema's `bodyParamKeys`
+                           array described above.
 
 ### Request AccessSchema Objects
 
