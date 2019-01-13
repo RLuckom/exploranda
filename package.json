@@ -4,7 +4,8 @@
   "description": "Building blocks for monitoring systems",
   "main": "lib/reporter.js",
   "scripts": {
-    "test": "node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=spec/jasmine.json"
+    "test": "node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=spec/jasmine.json",
+    "docs": "node generateDatasourceDocs.js > docs/dataSources.md"
   },
   "repository": {
     "type": "git",

@@ -16,16 +16,6 @@ everything's working:
 const {Gopher} = require('exploranda');
 const _ = require('lodash'); // I know I'm going to need it
 
-//simple function to display the error or retrieved dependencies
-function display(error, dependencies) {
-  if (error) {
-    console.log(`error: ${error}`);
-  } else {
-    console.log('Results:');
-    console.log(JSON.stringify(dependencies, null, 2));
-  }
-}
-
 const dependencies = {
 };
 
@@ -39,7 +29,6 @@ results:
 
 ```
 raphael@phal:~/workspace/explorandaTest$ node test.js 
-Results:
 undefined
 ```
 

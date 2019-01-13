@@ -1,8 +1,3 @@
-:toc: macro
-:toc-title:
-:toclevels: 99
-
-toc::[]
 
 image:https://travis-ci.org/RLuckom/exploranda.svg?branch=master["Build Status"]
 
@@ -98,166 +93,9 @@ dependencies that require them.
 ### 5. `Reporter` objects
 `Reporter` objects wrap the `Gopher` object and provide additional
 reporting capabilities, such as creating console displays. 
-
-## Getting Started
-
-Github, our lovely hosts, provide [API documentation](https://developer.github.com/v3/) for their
-service. Though it's a bit harder to find, [so do the fine folks at npm](https://github.com/npm/registry/blob/master/docs/REGISTRY-API.md).
-As an example project, we'll use Exploranda to collect information about
-itself from those two sources. You'll need a recent version of NodeJS
-and `npm`.
-
-First, in a new directory, install exploranda:
-
-`npm install --save exploranda`
-
-Exploranda includes a set of built-in `accessSchema` objects for the
-Github API. This tutorial will not go into detail on how to create them;
-for that, see the Creating AccessSchema Objects documentation.
-
-As a practice task, let's write a report that takes a commit hash
-and figures out how often in the past six months that commit has been
-downloaded as part of the exploranda package from npm. We'll assume that
-a commit is part of all downloads that happened after the release following
-its addition to the repo (this is probably not true for any number of reasons,
-but whatever). 
-
-For this report, we'll need tho determine when the commit showed up in the
-repo. We'll also need the full list of npm releases. Then when we determine
-which releases occurred after the commit landed in the repo, we'll need to retrieve
-download counts starting at the next release.
-
-To create a full report using the Reporter object, you need to create 
-three data structures, pass them to the report executor, and execute the report. The
-following example would display network data in and out of an EC2 instance on a pair of line
-charts in the console:
-
-```javascript
-const _ = require('lodash');
-const exploranda = require('./lib/reporter');
-const {ec2MetricsBuilder} = exploranda.dataSources.AWS.ec2;
-const instanceId = 'i-00e2c685b5bf8667f';
-const apiConfig = {region: 'us-east-1'};
-
-const reporter = new exploranda.Reporter();
-reporter.setSchemas({
-  // The dependencies section enumerates the data this report requires.
-  dependencies: {
-    // The functions like `ec2MetricsBuilder` are convenience functions that create
-    // dependency objects. See the "Dependencies" section for a more complete description.
-    instanceNetworkIn: ec2MetricsBuilder(
-      // AWS account and region data
-      apiConfig,
-      // The value to pass as the MetricName parameter is "NetworkPacketsIn"
-      {value: 'NetworkPacketsIn'},
-      // The value to pass as the Statistics parameter is the array.
-      {value: ['Average', 'Maximum']},
-      // The value to pass as the Dimensions parameter is the array.
-      {value: [{Name: 'InstanceId', Value: instanceId}]}
-    ),
-    instanceNetworkOut: ec2MetricsBuilder(
-      apiConfig,
-      {value: 'NetworkPacketsOut'},
-      {value: ['Average', 'Maximum']},
-      {value: [{Name: 'InstanceId', Value: instanceId}]}
-    )
-  },
-  transformation: {
-    [`${instanceId} Network Packets In`]: {
-      type: 'CUSTOM',
-      source: 'instanceNetworkIn',
-      // Specify a function to transform the dependency into the shape needed by the output.
-      // In this case, it's a structure that can be graphed.
-      tableBuilder: ([ec2MetricPoints]) => {
-        const times = _.map(ec2MetricPoints, (point) => point.Timestamp.getMinutes().toString());
-        return [{
-          title: 'Average',
-          style: {line: 'yellow'},
-          x: _.cloneDeep(times),
-          y: _.map(ec2MetricPoints, 'Average'),
-        }, {
-          title: 'Maximum',
-          style: {line: 'red'},
-          x: _.cloneDeep(times),
-          y: _.map(ec2MetricPoints, 'Maximum'),
-        }];
-      }
-    },
-    [`${instanceId} Network Packets Out`]: {
-      type: 'CUSTOM',
-      source: 'instanceNetworkOut',
-      tableBuilder: ([ec2MetricPoints]) => {
-        const times = _.map(ec2MetricPoints, (point) => point.Timestamp.getMinutes().toString());
-        return [{
-          title: 'Average',
-          style: {line: 'yellow'},
-          x: _.cloneDeep(times),
-          y: _.map(ec2MetricPoints, 'Average'),
-        }, {
-          title: 'Maximum',
-          style: {line: 'red'},
-          x: _.cloneDeep(times),
-          y: _.map(ec2MetricPoints, 'Maximum'),
-        }];
-      }
-    },
-  },
-  display: {
-    // Each top-level key specifies the visualizations of a particular type
-    // to display. This one specifies all the line plots.
-    lines: {
-      [`${instanceId} Network Packets In`]: {
-        // All the display objects have at least these four keys, specifying the
-        // size and position of the visualizations in a 12 x 12 grid.
-        column: 0,
-        row: 0,
-        rowSpan: 6,
-        columnSpan: 12
-      },
-      [`${instanceId} Network Packets Out`]: {
-        column: 0,
-        row: 6,
-        rowSpan: 6,
-        columnSpan: 12
-      },
-    }
-  }
-});
-
-reporter.execute();
-```
-
-image:./docs/images/net_io.png["Network IO"]
-
-A slightly expanded version of this report, which takes an instance ID as a command-line
-parameter, is available in the `examples` directory. You can run it using:
-
-```
-node examples/netIO.js <instance id>
-```
-
-If the display has 'nonprintable character' blocks or question marks where other characters
-should be, you might need to run it with:
-
-```
-LANG=en_US.utf8 TERM=xterm-256color node examples/netIO.js
-```
-
-If you only want to use this as a quick way to get JSON from APIs, you can use just
-the `dependencies` pipeline stage without specifying either of the other stages, and your data
-will be passed to a callback you provide. If you wanted, you could specify the first two stages
-and get back structured data without using the builtin `display` stage. When a 
-`display` isn't specified, the default is to log JSON to stdout, so it should be easy enough to
-integrate with tools in other languages. An example of a report that logs all the instances
-in an AWS account as a JSON array is at `examples/instancesJson.js`.
-
 The next sections show in detail how each of the pipeline stages are specified.
 
 ## Dependencies
-
-For the `dependencies` stage, you need to create an object representing your dependencies--the
-actual data your report requires. This stage of the pipeline is shaped by the _sources_ of your
-data and the requirements for accessing it.
 
 The dependency object is a JavaScript Object. Its keys are the names of the data to be 
 retrieved. Its values describe the data: where it comes from, what it looks like, and what 
@@ -287,7 +125,9 @@ const dataDependencies = {
 ```
 
 This object specifies two pieces of data: an array of AWS Kinesis Stream names and an array
-of Kinesis Stream objects returned from the AWS API. Each dependency defines some attributes:
+of Kinesis Stream objects returned from the AWS API. 
+
+Each dependency defines some attributes:
 
 `accessSchema` : Object (required) The AccessSchema object describing how to access the type of data the 
                  dependency refers to. The intent is that there should already be an AccessSchema object
@@ -396,9 +236,50 @@ const dataDependencies = {
 Note that `formatter` functions should be prepared to deal with cases when the data they expect is not
 available.
 
+In addition, there are parameters that are specific to dependencies
+that use the `GENERIC_API` accessSchema objects. The `apiConfig` parameter
+specifies metadata abount how to talk to the API. Certain paths on the `apiConfig`
+parameter are treated specially by the `GENERIC_API` `recordCollector`:
+
+`apiConfig.host` : The host to which to make the request (cannot include protocol, should include port if neccessary)
+
+`apiConfig.path`: path part of the URL. See `path` above.
+
+`apiConfig.method`: HTTP method. See `method` above. defaults to `GET`
+
+`apiConfig.protocol`: protocol string. See `protocol` above. defaults to `https://`
+
+`apiConfig.ca` : If provided, sets a CA for request to use when validating 
+                 the server certificate.
+
+`apiConfig.cert`: If provided, a client certificate to use in the request
+
+`apiConfig.key`: If provided, a client certificate key to use in the request
+
+`apiConfig.passphrase`: If provided, a passphrase to unlock the client certificate key to use in the request
+
+`apiConfig.user`: If provided, a username to use in the request auth
+
+`apiConfig.pass`: If provided, a password to use in the request auth
+
+`apiConfig.token`: If provided, a bearer token to use in the request auth.
+                   This will override user:pass auth if both are provided.
+
+`apiConfig.pathParamKeys`: If provided, will be concatenated with the sourceSchema's `pathParamKeys`
+                           array described above.
+
+`apiConfig.queryParamKeys`: If provided, will be concatenated with the sourceSchema's 
+                            `queryParamKeys` array described above.
+
+`apiConfig.headerParamKeys`: If prsovided, will be concatenated with the sourceSchema's 
+                             `headerParamKeys` array described above.
+
+`apiConfig.bodyParamKeys`: If provided, will be concatenated with the sourceSchema's `bodyParamKeys`
+                           array described above.
+
 ### Dependency Automagic
 
-The dependency step originated as an abstraction layer over AWSs APIs, which, while impressive
+The dependency objects originated as an abstraction layer over AWSs APIs, which, while impressive
 in their depth, completeness and documentation, can also be maddeningly inconsistent and edge-case-y.
 Specifically, I wanted a simple way to get all of the objects associated with a particular AWS
 resource type, like all kinesis streams or all the services in an ECS cluster, without always having to
@@ -493,6 +374,256 @@ These builder functions are fairly ad-hoc at the moment and I'm loathe to introd
 abstraction layer and data structure, so it may be best to regard those that exist as unstable.
 However, it is often convenient to implement such builders yourself in the context of a specific
 report.
+
+## AccessSchema Objects
+
+AccessSchema objects live one step closer to the center of this library than the 
+dependency, objects, and so they are also one step more
+general, re-usable, and, unfortunately, complicated. This tool consists of a very
+small core of relatively gnarly code (`libs/composer`, `libs/reporter`, 
+`libs/baseRecordCollector`) which is in total about a third of the
+size of the documentation. Surrounding that is a layer of standard-but-numerous
+accessSchema objects, which are themselves more complex than I would like a casual
+user to have to deal with. The design goal is that it should be simple for many
+people working in parallel to add any accessSchema objects as they are needed, and
+more casual users should usually find that the accessSchema object they want already
+exists or can be created and merged quickly.
+
+At the top level, each `accessSchema` must have a `dataSource` attribute
+identifying the reoprter function that knows how to fulfill requests 
+using that schema; other than that, the layout of each type of 
+accessSchema is determined by the requirements of the reporter function.
+
+### SDK Access Schemas
+
+The intent of the SDK accessSchema is to describe everything needed to interact with
+an SDK method. For examples of AWS AccessSchema objects, look in the 
+`lib/dataSources/aws` directory. For examples of the GCP AccessSchema objects,
+look in the `lib/dataSources/gcp` directory.
+
+#### Simple fields
+
+`dataSource` (required) : must be exactly `'AWS'` for AWS AccessSchemas
+and exactly `'GOOGLE'` for GCP AccessSchemas.
+
+`name` (required) : A name expressing the data source, used in error messages
+
+`apiMethod` (required) : the API method whose interface this accessSchema describes.
+This field differs between the AWS and GCP AccessSchemas. For AWS, it is the string
+name of the method on the relevand SDK object. For GCP, it is an array with the
+parts of the API namespace after the first. For instance, the apiMethod
+for the `compute.instanceGroups.list` API is `['instanceGroups', 'list']`. For
+Kubernetes, the `apiMethod` is the url path not including the host, with ES6 string
+interpolations for path parameters. For instance. the `apiMethod` for the
+[endpoint to get a single pod](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#-strong-read-operations-pod-v1-core-strong-) is `/api/v1/namespaces/${namespace}/pods/${name}`,
+and the `namespace` and `name` values from the `params` object will be substituted into
+the path.
+
+`incompleteIndicator` (optional) : a way to tell if the results from a call to this 
+API are incomplete and we need to get more. If this is a string or number, it is
+treated as a path on the result object (e.g. if `nextToken` exists, this result is
+incomplete). If specified as a function, it will be passed the result object and
+can return a truthy value to indicate that this result is incomplete.
+
+`nextBatchParamConstructor` (optional) : a function to construct the parameters
+for the next call to the API when the `incompleteIndicator` shows that this is a
+partial result. This function is called with two arguments: the parameters used
+for the most recent call and the result of the most recent call. its return value
+should be the parameters to use in the next call. This field must be specified if
+the `incompleteIndicator` is specified. If this function returns an array, the 
+objects in the array will each be treated as params to a separate call.
+
+`mergeOperator` (optional) : Function to merge the results of multiple successive
+calls to get the complete results. This function is called after _every_ call after
+the first with the running total of the results as the first argument and the current
+set of results as the second. If this function is not specified, `lodash.concat` is used.
+Note that the `mergeOperator` function is only used to merge responses in the case where
+the response from a _single_ call is incomplete, and further calls must be made to
+get the remainder of the results. In cases when more than one call needs to be made
+based on the params provided (including, for now, if the params need to be chunked into
+smaller groupings), the results of those calls will be merged with the `mergeIndividual`
+function. If the `nextBatchParamConstructor` function returns an array, the arguments
+to the `mergeOperator` function will be the results of the current call and an array containing
+the results of _all_ downstream calls.
+
+`onError` (optional) : In extremely rare cases, SDK APIs require you to make a call before
+you know whether it can succeed. The only example of this so far is the AWS `getBucketPolicy` S3
+method, which can return a `NoSuchBucketPolicy` error when a bucket policy does not exist, even
+though there is no other way to check for the policy's existence beforehand. In this kind of situation
+you can provide an `onError` field in the accessSchema, which will be passed the error and
+result of the SDK call. This parameter must return an object with `err` and `res` fields, which
+will be treated as if they were the error and response that had been returned by the API.
+
+`mergeIndividual` (optional) : Function to merge the results of multiple calls to an API
+_not_ triggered by the `incompleteIndicator`. For instance, if you pass an array of IDs
+as a parameter to a dependency whose accessSchema only takes a single ID, `mergeIndividual`
+will be used to merge the results of the individual calls to the API for each ID. But if
+you pass no params to a dependency whose accessSchema lists a resource, and the result from
+the API is incomplete and requires subsequent requests to get all of the results, the results
+of the list calls will be merged with `mergeOperator`. 
+
+The `mergeIndividual` function will be passed an array of response arrays from successive requests
+to the resource. The default `mergeIndividual` behavior is [`_.flatten`](https://lodash.com/docs/4.17.5#flatten).
+To preserve the array of arrays, use `_.identity` or `(x) => x`.
+
+#### The `namespaceDetails` field
+
+The `namespaceDetails` member contains information about the namespace on the
+SDK where the apiMethod specified is found. It has two fields:
+
+`name` (String, required) : the exact SDK namespace, e.g. `'EC2'` for AWS or `compute` for GCP.
+
+`constructorArgs` (Object, required) : defaults to pass to the namespace constructor.
+Right now this almost always includes `region: 'us-east-1'`, but this will change
+as the region will need to be configurable. The API version can also be specified.
+
+#### The `value` field
+
+The `value` field describes the type of value returned by this API. This is required
+internally for building parameters for API calls and consolidating the results. It
+is also used to construct clear error messages.
+
+`path` (required) : (String|Number) or function to get the _actual_ objects off of
+the results returned from the API, which invariably returns the actual cluster /
+instances / AMIs / whatever wrapped in some kind of API bookkeeping struct.
+
+`sortBy` (optional) : a selector or function to use to sort the results.
+
+#### The `params` field
+
+This field consists of literal key-value pairs to use as default values in calls
+to this endpoint. Do not confuse this with the `params` specified on the dependency
+objects--those are _not_ literal values, and need to specify more metadata. 
+
+#### The `requiredParams`  and `optionaParams` fields
+
+The `requiredParams` object specifies the values that _must_ be filled in at runtime in order for
+a call to this SDK method to succeed. The keys on this object are the keys that will
+be passed to the method. The values on this object provide metadata about how to 
+treat the values provided at runtime.
+
+The `optionalParams` object is structured exactly like the `requiredParams` object,
+but exploranda will not throw an error if these params aren't specified at runtime.
+You can still pass arbitrary parameters even if they are not specified in the
+`optionalParams` object--this object simply allows you to specify metatdata about
+the parameters.
+
+`max` (Number) : if the length of the array is limited by the SDK,
+`max` specifies the maximum number of values allowed per call. 
+
+`description` (String) : Description of the param for the docs.
+
+`defaultSource` (AccessSchema) : in the fairly rare cases where you have a `describe`
+API that takes an ID value and returns an object, _and_ there exists a `list` API that
+has no required parameters and returns a list of the IDs, you can attach the `accessSchema`
+of the `list` API as the `defaultSource` of the ID `requiredParam` object on the `describe`
+API. Then, if no specific parameter is specified for the ID in the `dependencies` stage, 
+the accessSchema will get the full list of IDs from the `list` API and then use them to get
+the full list of resources.
+
+`detectArray` (Function) : A function that, when passed the parameter vaue, returns `true`
+if the value is actually an array of parameters for a series of separate calls rather than
+a parameter for a single call. For instance, the CloudWatch metrics method requires a set
+of "Dimensions" for each call. These Dimensions are specified as an array of Dimension
+objects. This makes it impossible for the code doing the requests to determine from the
+parameters whether what it sees is "an array of Dimension objects, to be sent as the
+Dimensions parameter in a single call" or "an array of _arrays_ of Dimension objects,
+meant to be the arguments to _multiple_ calls".
+
+### AccessSchema Object Extensions for Generic Request-Based APIs
+
+For many common APIs it is simpler to just use https://github.com/request/request[request js] 
+as the base SDK and build accessSchema objects to provide a natural pattern
+for interacting with the resources and access methods exposed by the API.
+
+To accomodate this use case, there is a `GENERIC_API` data source function
+that wraps `request`. `GENERIC_API` accessSchema objects may set all the
+fields allowed on ordinary SDK accessSchema objects (defined above) and may
+also set the following fields to configure how requests to their API should be made:
+
+`path`: the path part of the URL. May be specified as a JS template
+        string to be rendered with parameter values, e.g. `'/api/v1/users/${userName}`
+
+`method`: the HTTP method to use in the request. Defaults to `GET`
+
+`host`: the host and port to which to make the request, e.g. `google.com:443`
+        The port need not be specified if it is the default for the protocol.
+
+`protocol`: the protocol string. Defaults to `https://`
+
+`pathParamKeys`: Generic APIs may specify the path part of their url as a
+                 JS template string, e.g. `'/api/v1/users/${userName}'`.
+                 The `pathParamKeys` accessSchema field is an array
+                 of the names of parameters to be used as values in that
+                 template, e.g. `['userName']`.
+
+`queryParamKeys`: an array of the names of parameters to be used as key / value
+                  pairs in the request querystring
+
+`bodyParamKeys`: an array of the names of parameters to be used as key / value
+                  pairs in the request body.
+
+`headerParamKeys`: an array of the names of parameters to be used as the request headers.
+
+`urlBuilder`: A function that will construct the URL given the
+              parameters specified in the `pathParamKeys` array.
+              If not specified, defaults to a function that
+              uses the params to render the `params.path || sourceSchema.params.path`
+              as if it was a JS template string.
+
+`requestQueryBuilder`: A function that will construct the URL query object
+              given the parameters specified in the `queryParamKeys` array.
+              If not specified, defaults to `_.identity`
+
+`requestBodyBuilder`: A function that will construct the URL body
+              given the parameters specified in dthe `bodyParamKeys` array.
+              If not specified, defaults to `_.identity`
+
+`requestHeadersBuilder`: A function that will construct the URL headers object
+              given the parameters specified in the `headerParamKeys` array.
+              If not specified, defaults to `_.identity`
+
+### Request AccessSchema Objects
+
+This accessSchema type describes a basic way to talk to HTTP / HTTPS APIs. It is
+much less mature than the SDK schema and should be expected to change. For an example
+of its use, see `lib/dataSources/elasticsearch/elasticsearch.js`
+
+#### Simple fields
+
+`dataSource` (required) : must be exactly `'REQUEST'`
+
+`generateRequest` (required) : Function to generate the request. Will be passed the 
+params specified on the dependency object as the only argument.
+
+`ignoreErrors` (boolean) : if truthy, will simply return undefined on errors.
+
+`defaultResponse` : if `ignoreErrors` is truthy, a response to use when there is an
+error; a sensible empty value.
+
+`incomplete` (Function) : detect if the response is incomplete. Analogous to 
+`incompleteIndicator` from the SDK access schema.
+
+`mergeResponses` (Function) : merge the responses of successive calls when the results
+required more than one call. Analagous to `mergeOperator`.
+
+`nextRequest` (Function): generate the parameters for the next request if the current
+results are incomplete. Analagous to `nextBatchParamConstructor`.
+
+### Synthetic AccessSchema Objects
+
+This accessSchema type provides a way to encapsulate a transformation
+of another dependency or set of dependencies that should be cached for 
+use in multiple downstream dependencies. 
+
+#### Fields
+
+`dataSource`: (required) : must be exactly `'SYNTHETIC'`
+
+`transformation`: (required) : Function, passed the resolved params
+                               as an object `{paramName: <value>`}`.
+                               The return value of this function is
+                               used as the value of this dependency.
 
 ## widgetDashboard Wrapper
 
@@ -892,289 +1023,3 @@ const stackedBarData = {
   data: [[0, 2, 3], [4, 0, 0]], // barCategory-major
 };
 ```
-
-## Creating new AccessSchema objects
-
-AccessSchema objects live one step closer to the center of this library than the 
-dependency, transformation, and display objects, and so they are also one step more
-general, re-usable, and, unfortunately, complicated. This tool consists of a very
-small core of relatively gnarly code (`libs/composer`, `libs/reporter`, 
-`libs/awsRecordCollector`, `libs/dashboard`) which is in total about a third of the
-size of this documentation file. Surrounding that is a layer of standard-but-numerous
-accessSchema objects, which are themselves more complex than I would like a casual
-user to have to deal with. The design goal is that it should be simple for many
-people working in parallel to add any accessSchema objects as they are needed, and
-more casual users should usually find that the accessSchema object they want already
-exists or can be created and merged quickly.
-
-Right now there are four types of AccessSchema objects: AWS, GCP, request-based, and synthetic. At the top level,
-each `accessSchema` must have a `dataSource` attribute identifying the data access function that
-knows how to fulfill requests using that schema; other than that, the layout of each
-type of accessSchema is determined by the requirements of the data access function.
-
-### SDK Access Schemas
-
-The intent of the SDK accessSchema is to describe everything needed to interact with
-an SDK method. For examples of AWS AccessSchema objects, look in the 
-`lib/dataSources/aws` directory. For examples of the GCP AccessSchema objects,
-look in the `lib/dataSources/gcp` directory.
-
-#### Simple fields
-
-`dataSource` (required) : must be exactly `'AWS'` for AWS AccessSchemas
-and exactly `'GOOGLE'` for GCP AccessSchemas.
-
-`name` (required) : A name expressing the data source, used in error messages
-
-`apiMethod` (required) : the API method whose interface this accessSchema describes.
-This field differs between the AWS and GCP AccessSchemas. For AWS, it is the string
-name of the method on the relevand SDK object. For GCP, it is an array with the
-parts of the API namespace after the first. For instance, the apiMethod
-for the `compute.instanceGroups.list` API is `['instanceGroups', 'list']`. For
-Kubernetes, the `apiMethod` is the url path not including the host, with ES6 string
-interpolations for path parameters. For instance. the `apiMethod` for the
-[endpoint to get a single pod](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#-strong-read-operations-pod-v1-core-strong-) is `/api/v1/namespaces/${namespace}/pods/${name}`,
-and the `namespace` and `name` values from the `params` object will be substituted into
-the path.
-
-`incompleteIndicator` (optional) : a way to tell if the results from a call to this 
-API are incomplete and we need to get more. If this is a string or number, it is
-treated as a path on the result object (e.g. if `nextToken` exists, this result is
-incomplete). If specified as a function, it will be passed the result object and
-can return a truthy value to indicate that this result is incomplete.
-
-`nextBatchParamConstructor` (optional) : a function to construct the parameters
-for the next call to the API when the `incompleteIndicator` shows that this is a
-partial result. This function is called with two arguments: the parameters used
-for the most recent call and the result of the most recent call. its return value
-should be the parameters to use in the next call. This field must be specified if
-the `incompleteIndicator` is specified. If this function returns an array, the 
-objects in the array will each be treated as params to a separate call.
-
-`mergeOperator` (optional) : Function to merge the results of multiple successive
-calls to get the complete results. This function is called after _every_ call after
-the first with the running total of the results as the first argument and the current
-set of results as the second. If this function is not specified, `lodash.concat` is used.
-Note that the `mergeOperator` function is only used to merge responses in the case where
-the response from a _single_ call is incomplete, and further calls must be made to
-get the remainder of the results. In cases when more than one call needs to be made
-based on the params provided (including, for now, if the params need to be chunked into
-smaller groupings), the results of those calls will be merged with the `mergeIndividual`
-function. If the `nextBatchParamConstructor` function returns an array, the arguments
-to the `mergeOperator` function will be the results of the current call and an array containing
-the results of _all_ downstream calls.
-
-`onError` (optional) : In extremely rare cases, SDK APIs require you to make a call before
-you know whether it can succeed. The only example of this so far is the AWS `getBucketPolicy` S3
-method, which can return a `NoSuchBucketPolicy` error when a bucket policy does not exist, even
-though there is no other way to check for the policy's existence beforehand. In this kind of situation
-you can provide an `onError` field in the accessSchema, which will be passed the error and
-result of the SDK call. This parameter must return an object with `err` and `res` fields, which
-will be treated as if they were the error and response that had been returned by the API.
-
-`mergeIndividual` (optional) : Function to merge the results of multiple calls to an API
-_not_ triggered by the `incompleteIndicator`. For instance, if you pass an array of IDs
-as a parameter to a dependency whose accessSchema only takes a single ID, `mergeIndividual`
-will be used to merge the results of the individual calls to the API for each ID. But if
-you pass no params to a dependency whose accessSchema lists a resource, and the result from
-the API is incomplete and requires subsequent requests to get all of the results, the results
-of the list calls will be merged with `mergeOperator`. 
-
-The `mergeIndividual` function will be passed an array of response arrays from successive requests
-to the resource. The default `mergeIndividual` behavior is [`_.flatten`](https://lodash.com/docs/4.17.5#flatten).
-To preserve the array of arrays, use `_.identity` or `(x) => x`.
-
-#### The `namespaceDetails` field
-
-The `namespaceDetails` member contains information about the namespace on the
-SDK where the apiMethod specified is found. It has two fields:
-
-`name` (String, required) : the exact SDK namespace, e.g. `'EC2'` for AWS or `compute` for GCP.
-
-`constructorArgs` (Object, required) : defaults to pass to the namespace constructor.
-Right now this almost always includes `region: 'us-east-1'`, but this will change
-as the region will need to be configurable. The API version can also be specified.
-
-#### The `value` field
-
-The `value` field describes the type of value returned by this API. This is required
-internally for building parameters for API calls and consolidating the results. It
-is also used to construct clear error messages.
-
-`path` (required) : (String|Number) or function to get the _actual_ objects off of
-the results returned from the API, which invariably returns the actual cluster /
-instances / AMIs / whatever wrapped in some kind of API bookkeeping struct.
-
-`sortBy` (optional) : a selector or function to use to sort the results.
-
-#### The `params` field
-
-This field consists of literal key-value pairs to use as default values in calls
-to this endpoint. Do not confuse this with the `params` specified on the dependency
-objects--those are _not_ literal values, and need to specify more metadata. 
-
-#### The `requiredParams`  and `optionaParams` fields
-
-The `requiredParams` object specifies the values that _must_ be filled in at runtime in order for
-a call to this SDK method to succeed. The keys on this object are the keys that will
-be passed to the method. The values on this object provide metadata about how to 
-treat the values provided at runtime.
-
-The `optionalParams` object is structured exactly like the `requiredParams` object,
-but exploranda will not throw an error if these params aren't specified at runtime.
-You can still pass arbitrary parameters even if they are not specified in the
-`optionalParams` object--this object simply allows you to specify metatdata about
-the parameters.
-
-`max` (Number) : if `shape` is ARRAY, but the length of the array is limited by the SDK,
-`max` specifies the maximum number of values allowed per call. 
-
-`defaultSource` (AccessSchema) : in the fairly rare cases where you have a `describe`
-API that takes an ID value and returns an object, _and_ there exists a `list` API that
-has no required parameters and returns a list of the IDs, you can attach the `accessSchema`
-of the `list` API as the `defaultSource` of the ID `requiredParam` object on the `describe`
-API. Then, if no specific parameter is specified for the ID in the `dependencies` stage, 
-the accessSchema will get the full list of IDs from the `list` API and then use them to get
-the full list of resources.
-
-`detectArray` (Function) : A function that, when passed the parameter vaue, returns `true`
-if the value is actually an array of parameters for a series of separate calls rather than
-a parameter for a single call. For instance, the CloudWatch metrics method requires a set
-of "Dimensions" for each call. These Dimensions are specified as an array of Dimension
-objects. This makes it impossible for the code doing the requests to determine from the
-parameters whether what it sees is "an array of Dimension objects, to be sent as the
-Dimensions parameter in a single call" or "an array of _arrays_ of Dimension objects,
-meant to be the arguments to _multiple_ calls".
-
-### AccessSchema Object Extensions for Generic Request-Based APIs
-
-For many common APIs it is simpler to just use https://github.com/request/request[request js] 
-as the base SDK and build accessSchema objects to provide a natural pattern
-for interacting with the resources and access methods exposed by the API.
-
-To accomodate this use case, there is a `GENERIC_API` data source function
-that wraps `request`. `GENERIC_API` accessSchema objects may set all the
-fields allowed on ordinary SDK accessSchema objects (defined above) and may
-also set the following fields to configure how requests to their API should be made:
-
-`path`: the path part of the URL. May be specified as a JS template
-        string to be rendered with parameter values, e.g. `'/api/v1/users/${userName}`
-
-`method`: the HTTP method to use in the request. Defaults to `GET`
-
-`host`: the host and port to which to make the request, e.g. `google.com:443`
-        The port need not be specified if it is the default for the protocol.
-
-`protocol`: the protocol string. Defaults to `https://`
-
-`pathParamKeys`: Generic APIs may specify the path part of their url as a
-                 JS template string, e.g. `'/api/v1/users/${userName}'`.
-                 The `pathParamKeys` accessSchema field is an array
-                 of the names of parameters to be used as values in that
-                 template, e.g. `['userName']`.
-
-`queryParamKeys`: an array of the names of parameters to be used as key / value
-                  pairs in the request querystring
-
-`bodyParamKeys`: an array of the names of parameters to be used as key / value
-                  pairs in the request body.
-
-`headerParamKeys`: an array of the names of parameters to be used as the request headers.
-
-`urlBuilder`: A function that will construct the URL given the
-              parameters specified in the `pathParamKeys` array.
-              If not specified, defaults to a function that
-              uses the params to render the `params.path || sourceSchema.params.path`
-              as if it was a JS template string.
-
-`requestQueryBuilder`: A function that will construct the URL query object
-              given the parameters specified in the `queryParamKeys` array.
-              If not specified, defaults to `_.identity`
-
-`requestBodyBuilder`: A function that will construct the URL body
-              given the parameters specified in dthe `bodyParamKeys` array.
-              If not specified, defaults to `_.identity`
-
-`requestHeadersBuilder`: A function that will construct the URL headers object
-              given the parameters specified in the `headerParamKeys` array.
-              If not specified, defaults to `_.identity`
-
-In addition, there are parameters that are specific to dependencies that use the `GENERIC_API` accessSchema objects:
-
-`apiConfig.host` : [Required] the host to which to make the request (cannot include protocol, should include port if neccessary)
-
-`apiConfig.path`: path part of the URL. See `path` above.
-
-`apiConfig.method`: HTTP method. See `method` above. defaults to `GET`
-
-`apiConfig.protocol`: protocol string. See `protocol` above. defaults to `https://`
-
-`apiConfig.ca` : If provided, sets a CA for request to use when validating 
-                 the server certificate.
-
-`apiConfig.cert`: If provided, a client certificate to use in the request
-
-`apiConfig.key`: If provided, a client certificate key to use in the request
-
-`apiConfig.passphrase`: If provided, a passphrase to unlock the client certificate key to use in the request
-
-`apiConfig.user`: If provided, a username to use in the request auth
-
-`apiConfig.pass`: If provided, a password to use in the request auth
-
-`apiConfig.token`: If provided, a bearer token to use in the request auth.
-                   This will override user:pass auth if both are provided.
-
-`apiConfig.pathParamKeys`: If provided, will be concatenated with the sourceSchema's `pathParamKeys`
-                           array described above.
-
-`apiConfig.queryParamKeys`: If provided, will be concatenated with the sourceSchema's 
-                            `queryParamKeys` array described above.
-
-`apiConfig.headerParamKeys`: If prsovided, will be concatenated with the sourceSchema's 
-                             `headerParamKeys` array described above.
-
-`apiConfig.bodyParamKeys`: If provided, will be concatenated with the sourceSchema's `bodyParamKeys`
-                           array described above.
-
-### Request AccessSchema Objects
-
-This accessSchema type describes a basic way to talk to HTTP / HTTPS APIs. It is
-much less mature than the SDK schema and should be expected to change. For an example
-of its use, see `lib/dataSources/elasticsearch/elasticsearch.js`
-
-#### Simple fields
-
-`dataSource` (required) : must be exactly `'REQUEST'`
-
-`generateRequest` (required) : Function to generate the request. Will be passed the 
-params specified on the dependency object as the only argument.
-
-`ignoreErrors` (boolean) : if truthy, will simply return undefined on errors.
-
-`defaultResponse` : if `ignoreErrors` is truthy, a response to use when there is an
-error; a sensible empty value.
-
-`incomplete` (Function) : detect if the response is incomplete. Analogous to 
-`incompleteIndicator` from the SDK access schema.
-
-`mergeResponses` (Function) : merge the responses of successive calls when the results
-required more than one call. Analagous to `mergeOperator`.
-
-`nextRequest` (Function): generate the parameters for the next request if the current
-results are incomplete. Analagous to `nextBatchParamConstructor`.
-
-### Synthetic AccessSchema Objects
-
-This accessSchema type provides a way to encapsulate a transformation
-of another dependency or set of dependencies that should be cached for 
-use in multiple downstream dependencies. 
-
-#### Fields
-
-`dataSource`: (required) : must be exactly `'SYNTHETIC'`
-
-`transformation`: (required) : Function, passed the resolved params
-                               as an object `{paramName: <value>`}`.
-                               The return value of this function is
-                               used as the value of this dependency.
