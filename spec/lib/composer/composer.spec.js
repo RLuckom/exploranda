@@ -528,7 +528,7 @@ const vaultTreeTestCase = {
             headers: {
               'X-Vault-Token': 'secretVaultToken'
             },
-            body: null,
+            body: void(0),
             json: true,
           }],
           error: null,
@@ -542,7 +542,7 @@ const vaultTreeTestCase = {
             headers: {
               'X-Vault-Token': 'secretVaultToken'
             },
-            body: null,
+            body: void(0),
             json: true,
           }],
           error: null,
@@ -556,7 +556,7 @@ const vaultTreeTestCase = {
             headers: {
               'X-Vault-Token': 'secretVaultToken'
             },
-            body: null,
+            body: void(0),
             json: true,
           }],
           error: null,
@@ -570,7 +570,7 @@ const vaultTreeTestCase = {
             headers: {
               'X-Vault-Token': 'secretVaultToken'
             },
-            body: null,
+            body: void(0),
             json: true,
           }],
           error: null,

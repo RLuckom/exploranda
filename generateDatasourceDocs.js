@@ -18,15 +18,15 @@ function isAccessSchema(dataSource) {
 }
 
 function annotateAccessSchema(accessSchema, key) {
-  console.log(`*${key}*: ${accessSchema.name}\n`);
-  console.log(` dataSource: \`${accessSchema.dataSource}\`\n`);
-  console.log(` requiredParams:\n`);
+  console.log(`#### **${key}**: ${accessSchema.name}\n`);
+  console.log(`  - **dataSource**: \`${accessSchema.dataSource}\``);
+  console.log(`  - **requiredParams:** ${_.keys(accessSchema.requiredParams).length ? '\n' : 'None\n'}`);
   _.each(accessSchema.requiredParams, (v, k) => {
-   console.log(`  ${k} : ${v.description || ''}\n`);
+   console.log(`    - ${k} : ${v.description || 'no description'}`);
   });
-  console.log(` optionalParams:\n`);
+  console.log(`  - **optionalParams:** ${_.keys(accessSchema.optionalParams).length ? '' : 'None'}`);
   _.each(accessSchema.optionalParams, (v, k) => {
-   console.log(`  ${k} : ${v.description || ''}\n`);
+   console.log(`    - ${k} : ${v.description || 'no description'}`);
   });
 }
 
