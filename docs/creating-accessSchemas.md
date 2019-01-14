@@ -1,3 +1,5 @@
+## Creating `accessSchema` Objects
+
 This tutorial describes how to create generic accessSchema objects using Github
 as an example API. For complete documentation of all available `accessSchema`
 settings, see the `accessSchema` section in the README.
@@ -21,7 +23,7 @@ const dependencies = {
 
 const reporter = Gopher(dependencies);
 
-reporter.report(display);
+reporter.report();
 ```
 
 Since the graph is empty, I can run the script but I won't get any
@@ -45,8 +47,12 @@ const repoAccessSchema = {
   host: 'api.github.com',
   path: '/repos/${owner}/${repo}',
   requiredParams: {
-    owner: {},
-    repo: {},
+    owner: {
+      description: "github username of the repo owner"
+    },
+    repo: {
+      description: "repo name"
+    },
   },
   pathParamKeys: ['owner', 'repo'],
 };
@@ -97,8 +103,12 @@ const repoAccessSchema = {
   host: 'api.github.com',
   path: '/repos/${owner}/${repo}',
   requiredParams: {
-    owner: {},
-    repo: {},
+    owner: {
+      description: "github username of the repo owner"
+    },
+    repo: {
+      description: "repo name"
+    },
   },
   params: {
     'User-Agent': 'exploranda'
@@ -139,8 +149,12 @@ const repoAccessSchema = {
   path: '/repos/${owner}/${repo}',
   value: {path: 'body'},
   requiredParams: {
-    owner: {},
-    repo: {},
+    owner: {
+      description: "github username of the repo owner"
+    },
+    repo: {
+      description: "repo name"
+    },
   },
   params: {
     'User-Agent': 'exploranda'
@@ -187,8 +201,12 @@ const commitsAccessSchema = {
   path: '/repos/${owner}/${repo}/commits',
   value: {path: 'body'},
   requiredParams: {
-    owner: {},
-    repo: {},
+    owner: {
+      description: "github username of the repo owner"
+    },
+    repo: {
+      description: "repo name"
+    },
   },
   params: {
     'User-Agent': 'exploranda'
@@ -229,8 +247,12 @@ const commitsAccessSchema = {
   },
   //value: {path: 'body'},
   requiredParams: {
-    owner: {},
-    repo: {},
+    owner: {
+      description: "github username of the repo owner"
+    },
+    repo: {
+      description: "repo name"
+    },
   },
   params: {
     'User-Agent': 'exploranda'
@@ -250,7 +272,7 @@ url parameter to the list of `queryParamKeys`. Now exploranda
 knows how to use the `link` header to fetch the next page of results
 until it gets to the end.
 
-To be honest, the `link` header strikes me as a poor implementation
+To be honest, the `link` header strikes me as a remarkably poor implementation
 of pagination--it uses a separate channel (the header) when it has a 
 perfectly good main channel (the response body) it could use, it asks
 that we "Don't try to guess or construct your own URL." which would
@@ -260,4 +282,4 @@ to use--but the point of exploranda is that none of that slows us down. When we
 encounter baffling design decisions, we don't try to fight them. We just 
 shake our heads, pick a spot for them on the reuse hierarchy between
 a `recordCollector` function and an individual dependency object, write
-them up once and forget them.
+them up once, and forget them.

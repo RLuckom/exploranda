@@ -12,14 +12,14 @@ First, in a new directory, install exploranda:
 
 Exploranda includes a set of built-in `accessSchema` objects for the
 Github API. This tutorial will not go into detail on how to create them;
-for that, see the Creating AccessSchema Objects documentation.
+for that, see the [Creating AccessSchema Objects](creating-accessSchemas.md) documentation.
 
 As a practice task, let's write a report that takes a commit hash
 and figures out how many commits are before it in the repo, how many
 are after it, and how many times in the past six months it has been
 downloaded as part of the exploranda package from npm. We'll assume that
 a commit is part of all downloads that happened after the release
-following its addition to the repo (this is probably not true for
+following its addition to the repo (this is certainly not true for
 any number of reasons, but whatever).
 
 For this report, we'll need to determine when the commit showed up in the
@@ -43,7 +43,7 @@ const dependencies = {
 
 const reporter = Gopher(dependencies);
 
-reporter.report(display);
+reporter.report();
 ```
 
 We can run this with `node <filename>` to ensure that it works.
@@ -190,6 +190,6 @@ const dependencies = {
 };
 ```
 
-The full code of this exercise can be found in the `examples` directory,
+The full code of this exercise can be found in [`../examples/gopherExample.js`](../examples/gopherExample.js) directory,
 and further documentation can be found in the README.
 

@@ -1,5 +1,5 @@
-const exploranda = require('exploranda');
-const _ = require('lodash'); // I know I'm going to need it
+const exploranda = require('../lib/reporter');
+const _ = require('lodash');
 const moment = require('moment');
 
 const commit = process.argv[2];

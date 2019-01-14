@@ -102,8 +102,7 @@ reporter.setSchemas({
 
 reporter.execute();
 ```
-
-image:./docs/images/net_io.png["Network IO"]
+!["Network IO"](images/net_io.png)
 
 A slightly expanded version of this report, which takes an instance ID as a command-line
 parameter, is available in the `examples` directory. You can run it using:

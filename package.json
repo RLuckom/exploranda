@@ -5,7 +5,7 @@
   "main": "lib/reporter.js",
   "scripts": {
     "test": "node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=spec/jasmine.json",
-    "docs": "node generateDatasourceDocs.js > docs/dataSources.md"
+    "docs": "node generateDatasourceDocs.js > docs/accessSchemas.md"
   },
   "repository": {
     "type": "git",

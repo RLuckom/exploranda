@@ -1,5 +1,5 @@
 
-image:https://travis-ci.org/RLuckom/exploranda.svg?branch=master["Build Status"]
+!["Build Status"](https://travis-ci.org/RLuckom/exploranda.svg?branch=master)
 
 !["Full Dashboard"](./docs/images/full_dashboard.png)
 
@@ -12,13 +12,21 @@ to provide basic visualization capabilities.
 Exploranda's data-gathering module allows you to represent data from APIs
 (such as compute instances from AWS or Google Cloud, records from Elasticsearch,
 KV pairs from Vault, or anything else) as a dependency graph. Each individual
-dependency is represented as an `accessSchema` object describing how to interact
-with the API, a set of parameters to use to generate calls to the API, and optional
-values controlling the dependency's cache lifetime and postprocessing. The parameters
-used to generate the API calls can be literal values, runtime-generated values,
-or values computed from the results of other dependencies. Exploranda comes with
-builtin `accessSchema` objects for several popular APIs and allows you to define your
-own if what you're looking for doesn't exist yet. PRs welcome!
+dependency is represented as:
+
+ * an `accessSchema` object describing how to interact with the API
+ * a set of parameters to use to generate calls to the API
+ * optional values controlling the dependency's cache lifetime and postprocessing.
+
+The parameters used to generate the API calls can be: 
+
+ * literal values
+ * runtime-generated values,
+ * values computed from the results of other dependencies
+
+Exploranda comes with [builtin `accessSchema` objects](docs/accessSchemas.md) 
+for several popular APIs and allows you to define your own if what you're
+looking for doesn't exist yet. PRs welcome!
 
 I use exploranda:
 
@@ -29,6 +37,9 @@ I use exploranda:
 
 Exploranda is not designed for use cases that require modifying data in APIs
 (such as PUT requests and many POST requests, etc.).
+
+To get started creating a report, see the [Getting Started](docs/getting-started.md)
+doc.
 
 ## Design
 
@@ -59,7 +70,9 @@ The parameters specified in a dependency object may be literal values,
 values generated at runtime, or instructions for creating values based
 on the results of other dependencies. The basic user-facing data access
 concept is the graph of dependency objects, specified as "name:dependency object"
-pairs.
+pairs. The [examples](examples/) directory includes a number of example reports.
+The [Getting Started](docs/getting-started.md) tutorial describes the process
+of building a dependency graph.
 
 ### 2. `accessSchema` Objects
 `accessSchema` objects represent the generic information about how to
@@ -71,7 +84,10 @@ such as the AWS and Google node SDKs, the `accessSchema` object includes
 information about how to instantiate the SDK object required to make 
 the request. Some library users may need to write `accessSchema` objects
 and are encouraged to consider opening PRs to contribute useful ones
-back upstream as builtins.
+back upstream as builtins. For a complete list of builtin `accessSchema` objects,
+see [accessSchemas.md](docs/accessSchemas.md). For complete documentation
+of `accessSchema` fields, see the [`accessSchema`](#accessschema-objects)
+section. For a tutorial on building your own, see [Creating Access Schemas](docs/creating-accessSchemas.md).
 
 ### 3. `recordCollector` Functions
 `recordCollector` functions are responsible for asynchronously getting 
@@ -80,7 +96,12 @@ function exists. This function's job is to parse an `accessSchema` and a set
 of parameters, make calls to its `dataSource`, and send the results to a callback.
 None of the previous object types in this hierarchy may make asynchronous
 calls; the `recordCollector` and the subsequent objects do. Library users 
-should not need to write their own `recordCollector` functions.
+should not need to write their own `recordCollector` functions. The 
+[`baseRecordCollector`](lib/baseRecordCollector.js) file includes a wrapper
+function that builds a full-featured `recordCollector` object when given a `getAPI`
+function as an argument; see the [`awsRecordCollector`](lib/awsRecordCollector.js),
+[`gcpRecordCollector`](lib/gcpRecordCollector.js) and [`genericApiRecordCollector`](lib/genericApiRecordCollector.js)
+for examples.
 
 ### 4. The `Gopher` object
 The `Gopher` object contains the logic for reading a graph of dependency
@@ -88,17 +109,20 @@ objects, determining the correct order in which to fetch them, using
 each dependency's specified `accessSchema`, parameters, and the `recordCollector`
 specified by the access schema to collect the value from the `dataSource`,
 and using the values collected to construct the parameters of subsequent
-dependencies that require them.
+dependencies that require them. The `Gopher` object is defined in [lib/composer.js](lib/composer.js)
 
 ### 5. `Reporter` objects
 `Reporter` objects wrap the `Gopher` object and provide additional
-reporting capabilities, such as creating console displays. 
-The next sections show in detail how each of the pipeline stages are specified.
+reporting capabilities, such as creating console displays. The two builtin
+reporter objects are the legacy [`reporter`](lib/reporter.js) and the
+newer [`widgetReporter`](lib/widgetReporter.js). The [examples](examples/)
+directory includes example reports built with these objects.
 
 ## Dependencies
 
-The dependency object is a JavaScript Object. Its keys are the names of the data to be 
-retrieved. Its values describe the data: where it comes from, what it looks like, and what 
+The dependency graph is represented as a JavaScript Object. Its keys 
+are the names of the "dependencies" to be  retrieved. Its values 
+describe the data: where it comes from, what it looks like, and what 
 parameters to use to get it. A very simple dependency object looks like this:
 
 ```javascript
@@ -629,7 +653,7 @@ use in multiple downstream dependencies.
 
 The widgetDashboard function is intended to provide an intuitive interface
 for creating CLI dashboards using the [blessed-contrib](https://github.com/yaronn/blessed-contrib)
-widget set. For an example of this wrapper, see the `examples/instancesJsonGcpNewStyle.js`
+widget set. For an example of this wrapper, see the [`examples/instancesJsonGcpNewStyle.js`](examples/instancesJsonGcpNewStyle.js)
 file.
 
 The widgetDashboard function accepts a single `schema` argument; an object with a 
