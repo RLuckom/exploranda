@@ -1,7 +1,7 @@
 
 image:https://travis-ci.org/RLuckom/exploranda.svg?branch=master["Build Status"]
 
-image:./docs/images/full_dashboard.png["Full Dashboard"]
+!["Full Dashboard"](./docs/images/full_dashboard.png)
 
 ## Introduction
 
