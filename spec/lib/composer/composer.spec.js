@@ -469,7 +469,7 @@ const awsCachedDependencyRequirementTestCase = {
   {
     time: 900,
     mocks: {},
-    target: ['kinesisStreams'],
+    target: 'kinesisStreams',
     preCache: {
       kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
       kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}],
