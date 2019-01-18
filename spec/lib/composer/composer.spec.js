@@ -376,6 +376,10 @@ const awsCachedDependencyRequirementTestCase = {
           source: ['kinesisNames', 'kinesisNames1'],
           formatter: ({kinesisNames, kinesisNames1}) => kinesisNames1
         },
+        falsyParam: {value: 0},
+        falsyParam2: {value: false},
+        falsyParam3: {value: null},
+        falsyParam4: {value: ''},
         apiConfig: apiConfig(),
       }
     },
@@ -440,8 +444,8 @@ const awsCachedDependencyRequirementTestCase = {
       kinesisStreams: {
         source: 'AWS',
         sourceConfig: [
-          successfulKinesisCall('describeStream', [{StreamName: 'foo'}], {StreamDescription: {StreamName: 'fooStream'}}),
-          successfulKinesisCall('describeStream', [{StreamName: 'bar'}], {StreamDescription: {StreamName: 'barStream'}}),
+          successfulKinesisCall('describeStream', [{StreamName: 'foo', falsyParam: 0, falsyParam2: false, falsyParam3: null, falsyParam4: ''}], {StreamDescription: {StreamName: 'fooStream'}}),
+          successfulKinesisCall('describeStream', [{StreamName: 'bar', falsyParam: 0, falsyParam2: false, falsyParam3: null, falsyParam4: ''}], {StreamDescription: {StreamName: 'barStream'}}),
         ]
       }
     },
@@ -454,7 +458,7 @@ const awsCachedDependencyRequirementTestCase = {
       kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
       kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}],
       kinesisStreams: [
-      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar']}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
+      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar'], falsyParam: 0, falsyParam2: false, falsyParam3: null, falsyParam4: ''}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
       ],
     },
     expectedValues: {
@@ -474,14 +478,14 @@ const awsCachedDependencyRequirementTestCase = {
       kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
       kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}],
       kinesisStreams: [
-      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar']}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
+      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar'], falsyParam: 0, falsyParam2: false, falsyParam3: null, falsyParam4: ''}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
       ],
     },
     postCache: {
       kinesisNames1: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo', 'bar']}],
       kinesisNames: [{collectorArgs: {apiConfig: apiConfig().value}, r: ['foo']}],
       kinesisStreams: [
-      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar']}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
+      {collectorArgs: {apiConfig: apiConfig().value, StreamName: ['foo', 'bar'], falsyParam: 0, falsyParam2: false, falsyParam3: null, falsyParam4: ''}, r: [{StreamName: 'fooStream'}, {StreamName: 'barStream'}]},
       ],
     },
     expectedValues: {
