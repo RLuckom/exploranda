@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const {kinesisStreams, kinesisStream, kinesisStreamMetrics} = require('../../../lib/dataSources/aws/kinesis');
 const vaultSecrets = require('../../../lib/dataSources/vault/secrets');
+const elasticsearch = require('../../../lib/dataSources/elasticsearch/elasticsearch');
 const {executeBasicTestSuite, executeCachingTestSuite, keys} = require('../composer.spec');
 
 function initialization(namespace, region) {
@@ -601,6 +602,220 @@ const vaultTreeTestCase = {
   ]
 };
 
+const elasticsearchInputNoDefaultTestCase = {
+  name: 'Elasticsearch input requests test case',
+  dataDependencies: {
+    elasticsearch: {
+      accessSchema: elasticsearch.search,
+      params: {
+        'apikey' : {value: 'secretApiKey'},
+        apiConfig: {
+          value: {
+            host: 'www.example.com'
+          },
+        },
+        query: {
+          input: 'esSearchQuery',
+          formatter: ({esSearchQuery}) => {
+            return {queryString: esSearchQuery};
+          },
+        },
+      }
+    },
+  },
+  phases: [
+  {
+    time: 0,
+    target: 'elasticsearch',
+    preCache: {},
+    preInputs: {},
+    inputs: {
+      esSearchQuery: 'input1'
+    },
+    postInputs: {
+      esSearchQuery: 'input1'
+    },
+    mocks: {
+      elasticsearch: {
+        source: 'GENERIC_API',
+        sourceConfig: [{
+          callParameters: [{
+            url: 'https://www.example.com/_search',
+            headers: {},
+            qs: {apikey: 'secretApiKey'},
+            body: {
+              query: {queryString: 'input1'},
+            },
+            json: true,
+            method: 'POST',
+          }],
+          error: null,
+          response: {statusCode: '200'},
+          body: {hits: {hits: ['bar', 'baz']}},
+        }], 
+      }
+    },
+    expectedValues: {
+      elasticsearch: [{
+        hits: {
+          hits: ['bar', 'baz'],
+        },
+      }],
+    },
+    postCache: {},
+  },
+  ]
+};
+
+const elasticsearchInputTestCase = {
+  name: 'Elasticsearch input requests test case',
+  dataDependencies: {
+    elasticsearch: {
+      accessSchema: elasticsearch.search,
+      params: {
+        'apikey' : {value: 'secretApiKey'},
+        apiConfig: {
+          value: {
+            host: 'www.example.com'
+          },
+        },
+        query: {
+          input: 'esSearchQuery',
+          formatter: ({esSearchQuery}) => {
+            return {queryString: esSearchQuery};
+          },
+        },
+      }
+    },
+  },
+  inputs: {
+    esSearchQuery: 'input1',
+  },
+  phases: [
+  {
+    time: 0,
+    target: 'elasticsearch',
+    preCache: {},
+    preInputs: {
+      esSearchQuery: 'input1'
+    },
+    postInputs: {
+      esSearchQuery: 'input1'
+    },
+    mocks: {
+      elasticsearch: {
+        source: 'GENERIC_API',
+        sourceConfig: [{
+          callParameters: [{
+            url: 'https://www.example.com/_search',
+            headers: {},
+            qs: {apikey: 'secretApiKey'},
+            body: {
+              query: {queryString: 'input1'},
+            },
+            json: true,
+            method: 'POST',
+          }],
+          error: null,
+          response: {statusCode: '200'},
+          body: {hits: {hits: ['bar', 'baz']}},
+        }], 
+      }
+    },
+    expectedValues: {
+      elasticsearch: [{
+        hits: {
+          hits: ['bar', 'baz'],
+        },
+      }],
+    },
+    postCache: {},
+  },
+  {
+    time: 300,
+    target: 'elasticsearch',
+    preCache: {},
+    inputOverrides: {esSearchQuery: 'inputOverride'},
+    preInputs: {
+      esSearchQuery: 'input1'
+    },
+    postInputs: {
+      esSearchQuery: 'input1'
+    },
+    mocks: {
+      elasticsearch: {
+        source: 'GENERIC_API',
+        sourceConfig: [{
+          callParameters: [{
+            url: 'https://www.example.com/_search',
+            headers: {},
+            qs: {apikey: 'secretApiKey'},
+            body: {
+              query: {queryString: 'inputOverride'},
+            },
+            json: true,
+            method: 'POST',
+          }],
+          error: null,
+          response: {statusCode: '200'},
+          body: {hits: {hits: ['qux', 'quux']}},
+        }], 
+      }
+    },
+    expectedValues: {
+      elasticsearch: [{
+        hits: {
+          hits: ['qux', 'quux'],
+        },
+      }],
+    },
+    postCache: {},
+  },
+  {
+    time: 500,
+    target: 'elasticsearch',
+    preCache: {},
+    inputs: {
+      esSearchQuery: 'input3'
+    },
+    preInputs: {
+      esSearchQuery: 'input1'
+    },
+    postInputs: {
+      esSearchQuery: 'input3'
+    },
+    mocks: {
+      elasticsearch: {
+        source: 'GENERIC_API',
+        sourceConfig: [{
+          callParameters: [{
+            url: 'https://www.example.com/_search',
+            headers: {},
+            qs: {apikey: 'secretApiKey'},
+            body: {
+              query: {queryString: 'input3'},
+            },
+            json: true,
+            method: 'POST',
+          }],
+          error: null,
+          response: {statusCode: '200'},
+          body: {hits: {hits: ['foo']}},
+        }], 
+      }
+    },
+    expectedValues: {
+      elasticsearch: [{
+        hits: {
+          hits: ['foo'],
+        },
+      }],
+    },
+    postCache: {},
+  },
+  ]
+};
+
 const awsCachingTargetingTestCase = {
   name: 'Single-source caching request case',
   dataDependencies: {
@@ -987,6 +1202,8 @@ const basicTestCases = [
 
 const cachingTestCases = [
   basicAwsCachingTestCase,
+  elasticsearchInputTestCase,
+  elasticsearchInputNoDefaultTestCase,
   vaultTreeTestCase,
   awsCachingTargetingTestCase,
   awsExpiringCacheTestCase,

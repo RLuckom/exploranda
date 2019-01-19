@@ -10,7 +10,7 @@ function requestMock() {
     const expectation = _.find(requestExpectations, ({args}) => _.isEqual(nonCallbackParams, args));
     if (!expectation) {
       const expected = JSON.stringify(_.map(requestExpectations, 'args'));
-      throw new Error(`Unexpected args for request: ${JSON.stringify(nonCallbackParams)}, expected ${expected}`);
+      throw new Error(`Unexpected args for request: ${JSON.stringify(nonCallbackParams)}, keys: ${_.map(nonCallbackParams, _.keys)}, expected ${expected}, keys: ${_.map(requestExpectations, ({args}) => _.keys(args))}`);
     }
     expectation.timesCalled = expectation.timesCalled ? expectation.timesCalled + 1 : 1;
     if (!_.isFunction(callbackReceived)) {
