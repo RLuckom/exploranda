@@ -6,7 +6,8 @@ exploranda.widgetDashboard({
   dataDependencies: {},
   inputs: {
     library: 'exploranda',
-    time: 'RLuckom/exploranda'
+    time: 'RLuckom/exploranda',
+    choices: ['foo', 'bar', 'baz']
   },
   display: {
     widgets: {
@@ -19,6 +20,17 @@ exploranda.widgetDashboard({
           row: 0,
           rowSpan: 2,
           columnSpan: 6
+        },
+      },
+      listInput: {
+        title: 'list',
+        displayType: 'list',
+        inputKeys: 'choices',
+        position: {
+          column: 0,
+          row: 6,
+          rowSpan: 4,
+          columnSpan: 3
         },
       },
       userInput: {
