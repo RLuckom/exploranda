@@ -1,6 +1,6 @@
 {
   "name": "exploranda",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "Building blocks for monitoring systems",
   "main": "lib/reporter.js",
   "scripts": {
