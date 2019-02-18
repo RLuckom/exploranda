@@ -1,7 +1,13 @@
 
-!["Build Status"](https://travis-ci.org/RLuckom/exploranda.svg?branch=master)
+!["Build Status"](https://travis-ci.org/RLuckom/exploranda-core.svg?branch=master)
 
 !["Full Dashboard"](./docs/images/full_dashboard.png)
+
+NOTE: The core functionality of exploranda has moved into the 
+[exploranda-core](https://github.com/RLuckom/exploranda-core) repo. It's still
+available as before through the `exploranda` npm package, but the code is no
+longer in this repo. For applications that do not require console visualizations,
+consider using `exploranda-core` directly.
 
 ## Introduction
 
