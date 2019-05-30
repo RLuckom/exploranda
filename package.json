@@ -28,10 +28,10 @@
   "dependencies": {
     "async": "^2.6.0",
     "blessed": "^0.1.81",
-    "blessed-contrib": "^4.8.9",
+    "blessed-contrib": "^4.8.16",
     "exploranda-core": "0.0.2",
     "lodash": "^4.17.4",
-    "marked": "^0.3.19",
+    "marked": "^0.6.2",
     "moment": "^2.22.2"
   },
   "devDependencies": {
