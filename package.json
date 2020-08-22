@@ -1,6 +1,6 @@
 {
   "name": "exploranda",
-  "version": "4.1.2",
+  "version": "4.1.3",
   "description": "Building blocks for monitoring systems",
   "main": "lib/reporter.js",
   "scripts": {
@@ -29,7 +29,7 @@
     "async": "^2.6.0",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.8.20",
-    "exploranda-core": "0.2.1",
+    "exploranda-core": "0.2.2",
     "lodash": "^4.17.20",
     "marked": "^0.6.2",
     "moment": "^2.22.2"
