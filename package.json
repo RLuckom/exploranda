@@ -26,13 +26,13 @@
   },
   "homepage": "https://github.com/rluckom/exploranda",
   "dependencies": {
-    "async": "^2.6.0",
+    "async": "^2.6.3",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.8.20",
-    "exploranda-core": "0.2.2",
+    "exploranda-core": "0.2.12",
     "lodash": "^4.17.20",
-    "marked": "^0.6.2",
-    "moment": "^2.22.2"
+    "marked": "0.7.0",
+    "moment": "^2.29.1"
   },
   "devDependencies": {
     "jasmine": "^2.8.0",
