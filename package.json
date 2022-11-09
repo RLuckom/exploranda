@@ -29,7 +29,7 @@
     "async": "^3.2.3",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
-    "exploranda-core": "0.6.9",
+    "exploranda-core": "0.6.12",
     "lodash": "^4.17.21",
     "marked": "^4.0.14",
     "moment": "^2.29.3"
