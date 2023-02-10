@@ -37,6 +37,6 @@
   "devDependencies": {
     "jasmine": "^2.8.0",
     "minimist": "^1.2.5",
-    "rewire": "^3.0.2"
+    "rewire": "^6.0.0"
   }
 }
